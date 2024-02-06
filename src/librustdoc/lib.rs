@@ -124,6 +124,12 @@ mod visit;
 mod visit_ast;
 mod visit_lib;
 
+mod tooling;
+
+pub fn tooling_main() {
+    println!("tooling entry!");
+}
+
 pub fn main() {
     // See docs in https://github.com/rust-lang/rust/blob/master/compiler/rustc/src/main.rs
     // about jemalloc.

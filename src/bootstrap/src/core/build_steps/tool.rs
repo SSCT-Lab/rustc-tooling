@@ -513,6 +513,120 @@ impl Step for Rustdoc {
     }
 }
 
+
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub struct Tooling {
+    /// This should only ever be 0 or 2.
+    /// We sometimes want to reference the "bootstrap" rustdoc, which is why this option is here.
+    pub compiler: Compiler,
+}
+
+impl Step for Tooling {
+    type Output = PathBuf;
+    const DEFAULT: bool = true;
+    const ONLY_HOSTS: bool = true;
+
+    fn should_run(run: ShouldRun<'_>) -> ShouldRun<'_> {
+        run.path("src/tools/tooling").path("src/librustdoc")
+    }
+
+    fn make_run(run: RunConfig<'_>) {
+        run.builder.ensure(Rustdoc {
+            // NOTE: this is somewhat unique in that we actually want a *target*
+            // compiler here, because rustdoc *is* a compiler. We won't be using
+            // this as the compiler to build with, but rather this is "what
+            // compiler are we producing"?
+            compiler: run.builder.compiler(run.builder.top_stage, run.target),
+        });
+    }
+
+    fn run(self, builder: &Builder<'_>) -> PathBuf {
+        let target_compiler = self.compiler;
+        if target_compiler.stage == 0 {
+            if !target_compiler.is_snapshot(builder) {
+                panic!("rustdoc in stage 0 must be snapshot rustdoc");
+            }
+            return builder.initial_rustc.with_file_name(exe("rustdoc", target_compiler.host));
+        }
+        let target = target_compiler.host;
+        // Similar to `compile::Assemble`, build with the previous stage's compiler. Otherwise
+        // we'd have stageN/bin/rustc and stageN/bin/rustdoc be effectively different stage
+        // compilers, which isn't what we want. Rustdoc should be linked in the same way as the
+        // rustc compiler it's paired with, so it must be built with the previous stage compiler.
+        let build_compiler = builder.compiler(target_compiler.stage - 1, builder.config.build);
+
+        // When using `download-rustc` and a stage0 build_compiler, copying rustc doesn't actually
+        // build stage0 libstd (because the libstd in sysroot has the wrong ABI). Explicitly build
+        // it.
+        builder.ensure(compile::Std::new(build_compiler, target_compiler.host));
+        builder.ensure(compile::Rustc::new(build_compiler, target_compiler.host));
+        // NOTE: this implies that `download-rustc` is pretty useless when compiling with the stage0
+        // compiler, since you do just as much work.
+        if !builder.config.dry_run() && builder.download_rustc() && build_compiler.stage == 0 {
+            println!(
+                "WARNING: `download-rustc` does nothing when building stage1 tools; consider using `--stage 2` instead"
+            );
+        }
+
+        // The presence of `target_compiler` ensures that the necessary libraries (codegen backends,
+        // compiler libraries, ...) are built. Rustdoc does not require the presence of any
+        // libraries within sysroot_libdir (i.e., rustlib), though doctests may want it (since
+        // they'll be linked to those libraries). As such, don't explicitly `ensure` any additional
+        // libraries here. The intuition here is that If we've built a compiler, we should be able
+        // to build rustdoc.
+        //
+        let mut features = Vec::new();
+        if builder.config.jemalloc {
+            features.push("jemalloc".to_string());
+        }
+
+        let mut cargo = prepare_tool_cargo(
+            builder,
+            build_compiler,
+            Mode::ToolRustc,
+            target,
+            "build",
+            "src/tools/tooling",
+            SourceType::InTree,
+            features.as_slice(),
+        );
+
+        if builder.config.rustc_parallel {
+            cargo.rustflag("--cfg=parallel_compiler");
+        }
+
+        let _guard = builder.msg_tool(
+            Mode::ToolRustc,
+            "tooling",
+            build_compiler.stage,
+            &self.compiler.host,
+            &target,
+        );
+        builder.run(&mut cargo.into());
+
+        // Cargo adds a number of paths to the dylib search path on windows, which results in
+        // the wrong rustdoc being executed. To avoid the conflicting rustdocs, we name the "tool"
+        // rustdoc a different name.
+        let tool_rustdoc = builder
+            .cargo_out(build_compiler, Mode::ToolRustc, target)
+            .join(exe("tooling_binary", target_compiler.host));
+
+        // don't create a stage0-sysroot/bin directory.
+        if target_compiler.stage > 0 {
+            let sysroot = builder.sysroot(target_compiler);
+            let bindir = sysroot.join("bin");
+            t!(fs::create_dir_all(&bindir));
+            let bin_rustdoc = bindir.join(exe("tooling", target_compiler.host));
+            let _ = fs::remove_file(&bin_rustdoc);
+            builder.copy(&tool_rustdoc, &bin_rustdoc);
+            bin_rustdoc
+        } else {
+            tool_rustdoc
+        }
+    }
+}
+
+
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq)]
 pub struct Cargo {
     pub compiler: Compiler,
