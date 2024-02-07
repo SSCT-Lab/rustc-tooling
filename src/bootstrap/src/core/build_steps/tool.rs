@@ -603,7 +603,7 @@ impl Step for Tooling {
         // rustdoc a different name.
         let tool_rustdoc = builder
             .cargo_out(build_compiler, Mode::ToolRustc, target)
-            .join(exe("tooling_tool_binary", target_compiler.host));
+            .join(exe("tooling", target_compiler.host));
 
         // don't create a stage0-sysroot/bin directory.
         if target_compiler.stage > 0 {
@@ -612,6 +612,7 @@ impl Step for Tooling {
             t!(fs::create_dir_all(&bindir));
             let bin_rustdoc = bindir.join(exe("tooling", target_compiler.host));
             let _ = fs::remove_file(&bin_rustdoc);
+            println!("tool: {:?}, bin: {:?}", tool_rustdoc, bin_rustdoc);
             builder.copy(&tool_rustdoc, &bin_rustdoc);
             bin_rustdoc
         } else {
