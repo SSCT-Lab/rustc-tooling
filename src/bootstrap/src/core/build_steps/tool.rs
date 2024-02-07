@@ -516,8 +516,6 @@ impl Step for Rustdoc {
 
 #[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Tooling {
-    /// This should only ever be 0 or 2.
-    /// We sometimes want to reference the "bootstrap" rustdoc, which is why this option is here.
     pub compiler: Compiler,
 }
 
@@ -531,11 +529,7 @@ impl Step for Tooling {
     }
 
     fn make_run(run: RunConfig<'_>) {
-        run.builder.ensure(Rustdoc {
-            // NOTE: this is somewhat unique in that we actually want a *target*
-            // compiler here, because rustdoc *is* a compiler. We won't be using
-            // this as the compiler to build with, but rather this is "what
-            // compiler are we producing"?
+        run.builder.ensure(Tooling {
             compiler: run.builder.compiler(run.builder.top_stage, run.target),
         });
     }
@@ -546,7 +540,7 @@ impl Step for Tooling {
             if !target_compiler.is_snapshot(builder) {
                 panic!("rustdoc in stage 0 must be snapshot rustdoc");
             }
-            return builder.initial_rustc.with_file_name(exe("rustdoc", target_compiler.host));
+            return builder.initial_rustc.with_file_name(exe("tooling", target_compiler.host));
         }
         let target = target_compiler.host;
         // Similar to `compile::Assemble`, build with the previous stage's compiler. Otherwise
@@ -609,7 +603,7 @@ impl Step for Tooling {
         // rustdoc a different name.
         let tool_rustdoc = builder
             .cargo_out(build_compiler, Mode::ToolRustc, target)
-            .join(exe("tooling_binary", target_compiler.host));
+            .join(exe("tooling_tool_binary", target_compiler.host));
 
         // don't create a stage0-sysroot/bin directory.
         if target_compiler.stage > 0 {
