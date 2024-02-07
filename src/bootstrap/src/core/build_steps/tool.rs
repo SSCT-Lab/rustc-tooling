@@ -612,7 +612,6 @@ impl Step for Tooling {
             t!(fs::create_dir_all(&bindir));
             let bin_rustdoc = bindir.join(exe("tooling", target_compiler.host));
             let _ = fs::remove_file(&bin_rustdoc);
-            println!("tool: {:?}, bin: {:?}", tool_rustdoc, bin_rustdoc);
             builder.copy(&tool_rustdoc, &bin_rustdoc);
             bin_rustdoc
         } else {
