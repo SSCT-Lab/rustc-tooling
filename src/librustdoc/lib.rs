@@ -127,8 +127,31 @@ mod visit_lib;
 mod tooling;
 
 pub fn tooling_main() {
-    println!("tooling entry!");
+    let mut early_dcx = EarlyDiagCtxt::new(ErrorOutputType::default());
+
+    let using_internal_features = rustc_driver::install_ice_hook(
+        "https://github.com/rust-lang/rust/issues/new\
+    ?labels=C-bug%2C+I-ICE%2C+T-rustdoc&template=ice.md",
+        |_| (),
+    );
+
+    init_logging(&early_dcx);
+    rustc_driver::init_logger(&early_dcx, rustc_log::LoggerConfig::from_env("RUSTDOC_LOG"));
+
+    let exit_code = rustc_driver::catch_with_exit_code(|| match get_args(&early_dcx) {
+        Some(args) => {
+            tooling_main_args(&mut early_dcx, &args, using_internal_features)
+        },
+        _ =>
+            {
+                #[allow(deprecated)]
+                Err(ErrorGuaranteed::unchecked_claim_error_was_emitted())
+            }
+    });
+    process::exit(exit_code);
 }
+
+
 
 pub fn main() {
     // See docs in https://github.com/rust-lang/rust/blob/master/compiler/rustc/src/main.rs
@@ -704,6 +727,151 @@ fn run_renderer<'tcx, T: formats::FormatRenderer<'tcx>>(
         }
     }
 }
+
+fn tooling_main_args(
+    early_dcx: &mut EarlyDiagCtxt,
+    at_args: &[String],
+    using_internal_features: Arc<AtomicBool>,
+) -> MainResult {
+    // Throw away the first argument, the name of the binary.
+    // In case of at_args being empty, as might be the case by
+    // passing empty argument array to execve under some platforms,
+    // just use an empty slice.
+    //
+    // This situation was possible before due to arg_expand_all being
+    // called before removing the argument, enabling a crash by calling
+    // the compiler with @empty_file as argv[0] and no more arguments.
+    let at_args = at_args.get(1..).unwrap_or_default();
+
+    let args = rustc_driver::args::arg_expand_all(early_dcx, at_args);
+
+    let mut options = getopts::Options::new();
+    for option in opts() {
+        (option.apply)(&mut options);
+    }
+    let matches = match options.parse(&args) {
+        Ok(m) => m,
+        Err(err) => {
+            early_dcx.early_fatal(err.to_string());
+        }
+    };
+
+    // Note that we discard any distinction between different non-zero exit
+    // codes from `from_matches` here.
+    let (options, render_options) = match config::Options::from_matches(early_dcx, &matches, args) {
+        Ok(opts) => opts,
+        Err(code) => {
+            return if code == 0 {
+                Ok(())
+            } else {
+                #[allow(deprecated)]
+                Err(ErrorGuaranteed::unchecked_claim_error_was_emitted())
+            };
+        }
+    };
+
+    let diag =
+        core::new_dcx(options.error_format, None, options.diagnostic_width, &options.unstable_opts);
+
+    match (options.should_test, options.markdown_input()) {
+        (true, true) => return wrap_return(&diag, markdown::test(options)),
+        (true, false) => return doctest::run(options),
+        (false, true) => {
+            let input = options.input.clone();
+            let edition = options.edition;
+            let config = core::create_config(options, &render_options, using_internal_features);
+
+            // `markdown::render` can invoke `doctest::make_test`, which
+            // requires session globals and a thread pool, so we use
+            // `run_compiler`.
+            return wrap_return(
+                &diag,
+                interface::run_compiler(config, |_compiler| {
+                    markdown::render(&input, render_options, edition)
+                }),
+            );
+        }
+        (false, false) => {}
+    }
+
+    // need to move these items separately because we lose them by the time the closure is called,
+    // but we can't create the dcx ahead of time because it's not Send
+    let show_coverage = options.show_coverage;
+    let run_check = options.run_check;
+
+    // First, parse the crate and extract all relevant information.
+    info!("starting to run rustc");
+
+    // Interpret the input file as a rust source file, passing it through the
+    // compiler all the way through the analysis passes. The rustdoc output is
+    // then generated from the cleaned AST of the crate. This runs all the
+    // plug/cleaning passes.
+    let crate_version = options.crate_version.clone();
+
+    let output_format = options.output_format;
+    let scrape_examples_options = options.scrape_examples_options.clone();
+    let bin_crate = options.bin_crate;
+
+    let config = core::create_config(options, &render_options, using_internal_features);
+
+    interface::run_compiler(config, |compiler| {
+        let sess = &compiler.sess;
+
+        if sess.opts.describe_lints {
+            rustc_driver::describe_lints(sess);
+            return Ok(());
+        }
+
+        compiler.enter(|queries| {
+            let mut gcx = abort_on_err(queries.global_ctxt(), sess);
+            if sess.dcx().has_errors().is_some() {
+                sess.dcx().fatal("Compilation failed, aborting rustdoc");
+            }
+
+            gcx.enter(|tcx| {
+                let (krate, render_opts, mut cache) = sess.time("run_global_ctxt", || {
+                    core::run_global_ctxt(tcx, show_coverage, render_options, output_format)
+                });
+                info!("finished with rustc");
+
+                if let Some(options) = scrape_examples_options {
+                    return scrape_examples::run(
+                        krate,
+                        render_opts,
+                        cache,
+                        tcx,
+                        options,
+                        bin_crate,
+                    );
+                }
+
+                cache.crate_version = crate_version;
+
+                if show_coverage {
+                    // if we ran coverage, bail early, we don't need to also generate docs at this point
+                    // (also we didn't load in any of the useful passes)
+                    return Ok(());
+                } else if run_check {
+                    // Since we're in "check" mode, no need to generate anything beyond this point.
+                    return Ok(());
+                }
+
+                println!("{:#?}", tcx.hir().krate());
+
+                info!("going to format");
+                match output_format {
+                    config::OutputFormat::Html => sess.time("render_html", || {
+                        run_renderer::<html::render::Context<'_>>(krate, render_opts, cache, tcx)
+                    }),
+                    config::OutputFormat::Json => sess.time("render_json", || {
+                        run_renderer::<json::JsonRenderer<'_>>(krate, render_opts, cache, tcx)
+                    }),
+                }
+            })
+        })
+    })
+}
+
 
 fn main_args(
     early_dcx: &mut EarlyDiagCtxt,
