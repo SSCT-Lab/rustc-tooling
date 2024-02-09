@@ -84,6 +84,7 @@ use rustc_session::config::{make_crate_type_option, ErrorOutputType, RustcOptGro
 use rustc_session::{getopts, EarlyDiagCtxt};
 
 use crate::clean::utils::DOC_RUST_LANG_ORG_CHANNEL;
+use crate::tooling::analyze_dependencies;
 
 /// A macro to create a FxHashMap.
 ///
@@ -856,7 +857,7 @@ fn tooling_main_args(
                     return Ok(());
                 }
 
-                println!("{:#?}", tcx.hir().krate());
+                analyze_dependencies(tcx);
 
                 info!("going to format");
                 match output_format {

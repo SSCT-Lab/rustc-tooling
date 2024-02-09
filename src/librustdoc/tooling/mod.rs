@@ -1,60 +1,60 @@
-use std::path::PathBuf;
-use std::rc::Rc;
-use crate::clean::{Crate, Item};
-use crate::config::RenderOptions;
-use crate::error::Error;
-use crate::formats::cache::Cache;
-use crate::formats::FormatRenderer;
 use rustc_middle::ty::TyCtxt;
+use rustc_middle::hir::map::Map;
+use rustc_session::Session;
+use rustc_span::source_map::SourceMap;
+use rustc_hir::intravisit::Visitor;
+use rustc_hir::Expr;
+use rustc_hir::ExprKind;
 
-#[derive(Clone)]
-pub(crate) struct GraphRenderer<'tcx> {
+#[allow(dead_code)]
+pub(crate) struct DependencyGraph<'tcx> {
     tcx: TyCtxt<'tcx>,
-    out_path: PathBuf,
-    cache: Rc<Cache>
+    hir: Map<'tcx>,
 }
 
-impl <'tcx> GraphRenderer<'tcx> {
-
-}
-
-impl<'tcx> FormatRenderer<'tcx> for GraphRenderer<'tcx> {
-    fn descr() -> &'static str {
-        "graph"
+#[allow(dead_code)]
+impl<'tcx> DependencyGraph<'tcx> {
+    fn sess(&self) -> &'tcx Session {
+        self.tcx.sess
     }
 
-    const RUN_ON_MODULE: bool = false;
-
-    fn init(krate: Crate, options: RenderOptions, cache: Cache, tcx: TyCtxt<'tcx>) -> Result<(Self, Crate), Error> {
-        Ok((
-            GraphRenderer {
-                tcx,
-                out_path: options.output,
-                cache: Rc::new(cache),
-            },
-            krate
-        ))
-    }
-
-    fn make_child_renderer(&self) -> Self {
-        self.clone()
-    }
-
-    fn item(&mut self, item: Item) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn mod_item_in(&mut self, _item: &Item) -> Result<(), Error> {
-        unreachable!("RUN_ON_MODULE = false should never call mod_item_in")
-    }
-
-    fn after_krate(&mut self) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn cache(&self) -> &Cache {
-        &self.cache
+    fn source_map(&self) -> &SourceMap {
+        self.sess().source_map()
     }
 }
 
+#[allow(dead_code)]
+pub struct GraphVisitor<'tcx> {
+    graph: DependencyGraph<'tcx>,
+}
 
+impl<'tcx> Visitor<'tcx> for GraphVisitor<'tcx> {
+    fn visit_item(&mut self, item: &'tcx rustc_hir::Item<'tcx>) {
+        rustc_hir::intravisit::walk_item(self, item);
+        if let rustc_hir::ItemKind::Fn(.., body_id) = &item.kind {
+            let body = self.graph.tcx.hir().body(*body_id);
+            self.visit_body(body);
+        }
+    }
+    fn visit_expr(&mut self, ex: &'tcx Expr<'tcx>) {
+        if let ExprKind::Assign(_lhs, _rhs, _) = &ex.kind {
+            println!("this is assign!");
+        }
+        rustc_hir::intravisit::walk_expr(self, ex);
+    }
+}
+
+#[allow(dead_code)]
+pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
+    let hir = tcx.hir();
+    let dependency_graph = DependencyGraph {
+        tcx,
+        hir
+    };
+
+    let mut visitor = GraphVisitor {
+        graph: dependency_graph,
+    };
+
+    tcx.hir().visit_all_item_likes_in_crate(&mut visitor);
+}
