@@ -1,15 +1,26 @@
+use std::collections::HashMap;
+use std::path::PathBuf;
+
 use rustc_middle::ty::TyCtxt;
 use rustc_middle::hir::map::Map;
 use rustc_session::Session;
-use rustc_span::source_map::SourceMap;
-use rustc_hir::intravisit::Visitor;
-use rustc_hir::Expr;
-use rustc_hir::ExprKind;
+use rustc_span::source_map::{SourceMap, Span};
+use rustc_hir::intravisit::{Visitor, NestedVisitorMap};
+use rustc_hir::{Expr, ExprKind};
+
+#[derive(Debug)]
+pub(crate) struct LocInfo {
+    pub ident: String,
+    pub line_num: usize,
+    pub col_num: usize,
+    pub file_path: PathBuf,
+}
 
 #[allow(dead_code)]
 pub(crate) struct DependencyGraph<'tcx> {
     tcx: TyCtxt<'tcx>,
     hir: Map<'tcx>,
+    lhs_to_loc_info: HashMap<LocInfo, Vec<LocInfo>>,
 }
 
 #[allow(dead_code)]
@@ -36,9 +47,12 @@ impl<'tcx> Visitor<'tcx> for GraphVisitor<'tcx> {
             self.visit_body(body);
         }
     }
+
     fn visit_expr(&mut self, ex: &'tcx Expr<'tcx>) {
-        if let ExprKind::Assign(_lhs, _rhs, _) = &ex.kind {
-            println!("this is assign!");
+        if let ExprKind::Assign(lhs, rhs, _) = &ex.kind {
+            let src_map = self.graph.source_map();
+
+            
         }
         rustc_hir::intravisit::walk_expr(self, ex);
     }
@@ -49,12 +63,14 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
     let hir = tcx.hir();
     let dependency_graph = DependencyGraph {
         tcx,
-        hir
+        hir,
+        lhs_to_loc_info: HashMap::new(), // Initialize the map
     };
 
     let mut visitor = GraphVisitor {
         graph: dependency_graph,
     };
 
-    tcx.hir().visit_all_item_likes_in_crate(&mut visitor);
+    // Visit all item likes in the crate
+    tcx.hir().krate().visit_all_item_likes(&mut NestedVisitorMap::All(&mut visitor));
 }
