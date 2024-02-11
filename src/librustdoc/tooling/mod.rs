@@ -39,6 +39,21 @@ impl<'tcx> DependencyGraph<'tcx> {
 #[allow(dead_code)]
 pub struct GraphVisitor<'tcx> {
     graph: DependencyGraph<'tcx>,
+    current_body_id: Option<rustc_hir::BodyId>,
+}
+
+#[allow(dead_code)]
+impl<'tcx> GraphVisitor<'tcx> {
+    fn new(graph: DependencyGraph<'tcx>) -> Self {
+        GraphVisitor {
+            graph,
+            current_body_id: None,
+        }
+    }
+
+    fn update_current_body_id(&mut self, body_id: Option<rustc_hir::BodyId>) {
+        self.current_body_id = body_id;
+    }
 }
 
 #[allow(dead_code)]
@@ -68,6 +83,7 @@ impl GraphVisitor<'_> {
         None
     }
 
+    // extract info for rhs(s)
     fn extract_loc_infos(&self, expr: &Expr<'_>) -> Option<Vec<LocInfo>> {    
         match expr.kind {
             ExprKind::Binary(_, lhs, rhs) => {
@@ -93,7 +109,34 @@ impl GraphVisitor<'_> {
                 } else {
                     None
                 }
-            }
+            },
+            ExprKind::MethodCall(method_name, _, _, _) => {
+                match self.current_body_id {
+                    Some(body) => {
+                        let typeck_results = self.graph.tcx.typeck_body(body);
+                        let def_id = typeck_results.type_dependent_def(expr.hir_id);
+                        match def_id {
+                            Some((_, def_id)) => {
+                                if let Ok(span) = self.graph.tcx.span_of_impl(def_id) {
+                                    let src_map = self.graph.source_map();
+                                    let file_path = src_map.span_to_filename(span);
+                                    let start_pos = src_map.lookup_char_pos(span.lo());
+                                    
+                                    return Some(vec![LocInfo {
+                                        ident: method_name.ident.to_string(),
+                                        line_num: start_pos.line,
+                                        col_num: start_pos.col_display,
+                                        file_path,
+                                    }]);
+                                }               
+                            },
+                            None => return None
+                        }
+                    },
+                    None => return None
+                }
+                None
+            },
             ExprKind::Path(_) => {
                 if let Some((hir_id, ident)) = self.get_hir_id_and_ident(expr) {
                     if let Some(loc_info) = self.extract_loc_info_from_hir_id(hir_id, ident) {
@@ -143,7 +186,7 @@ impl GraphVisitor<'_> {
         };
 
         let src_map = self.graph.source_map();
-        let span = match node {
+        let span = match node {                
             Node::Expr(expr) => expr.span,
             Node::Item(item) => item.span,
             _ => return None, 
@@ -166,6 +209,7 @@ impl<'tcx> Visitor<'tcx> for GraphVisitor<'tcx> {
     fn visit_item(&mut self, item: &'tcx rustc_hir::Item<'tcx>) {
         rustc_hir::intravisit::walk_item(self, item);
         if let rustc_hir::ItemKind::Fn(.., body_id) = &item.kind {
+            self.update_current_body_id(Some(*body_id));
             let body = self.graph.tcx.hir().body(*body_id);
             self.visit_body(body);
         }
@@ -204,9 +248,7 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
         lhs_to_loc_info: FxHashMap::default(), // Initialize the map
     };
 
-    let mut visitor = GraphVisitor {
-        graph: dependency_graph,
-    };
+    let mut visitor = GraphVisitor::new(dependency_graph);
 
     // Visit all item likes in the crate
     tcx.hir().visit_all_item_likes_in_crate(&mut visitor);
