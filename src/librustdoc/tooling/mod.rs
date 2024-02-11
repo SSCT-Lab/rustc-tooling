@@ -203,6 +203,14 @@ impl GraphVisitor<'_> {
             }
         )
     }
+
+    fn extract_ident_from_pat(&self, pat: rustc_hir::Pat<'_>) -> Option<String> {
+        use rustc_hir::PatKind::*;
+        match pat.kind {
+            Binding(_, _, ident, None) => Some(ident.to_string()),
+            _ => None,
+        }
+    }
 }
 
 impl<'tcx> Visitor<'tcx> for GraphVisitor<'tcx> {
@@ -215,7 +223,40 @@ impl<'tcx> Visitor<'tcx> for GraphVisitor<'tcx> {
         }
     }
 
-    #[allow(unused_variables)]
+    fn visit_stmt(&mut self, stmt: &'tcx rustc_hir::Stmt<'tcx>) {
+        use rustc_hir::StmtKind::*;
+
+        match stmt.kind {
+            Local(local) => {
+                if let Some(ident) = self.extract_ident_from_pat(*local.pat) {
+                    if let Some(init_expr) = local.init {
+                        if let Some(rhs_loc_infos) = self.extract_loc_infos(init_expr) {
+                            let span = local.span;
+                            let src_map = self.graph.source_map();
+                            let start_pos = src_map.lookup_char_pos(span.lo());
+                            let file_path = src_map.span_to_filename(span);
+
+                            let lhs_loc_info = LocInfo {
+                                ident,
+                                line_num: start_pos.line,
+                                col_num: start_pos.col_display,
+                                file_path,
+                            };
+
+                            self.graph.lhs_to_loc_info.entry(lhs_loc_info)
+                                .or_insert(Vec::new())
+                                .extend(rhs_loc_infos)
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+
+        rustc_hir::intravisit::walk_stmt(self, stmt);
+    }
+    
+
     fn visit_expr(&mut self, ex: &'tcx Expr<'tcx>) {
         if let ExprKind::Assign(lhs, rhs, _) = &ex.kind {
             // Extract location information for the lhs of the assignment
