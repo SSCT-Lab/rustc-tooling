@@ -137,6 +137,9 @@ impl GraphVisitor<'_> {
                 }
                 None
             },
+            // ExprKind::Field(_expr, _ident) => {
+            //     todo!()
+            // },
             ExprKind::Path(_) => {
                 if let Some((hir_id, ident)) = self.get_hir_id_and_ident(expr) {
                     if let Some(loc_info) = self.extract_loc_info_from_hir_id(hir_id, ident) {
@@ -153,12 +156,12 @@ impl GraphVisitor<'_> {
     }
     
     fn get_hir_id_and_ident(&self, expr: &Expr<'_>) -> Option<(HirId, String)> {
-        println!("ExprKind: {:?}", expr.kind);
+        // println!("ExprKind: {:?}", expr.kind);
         if let ExprKind::Path(qpath) = &expr.kind {
             if let QPath::Resolved(_, path) = qpath {
                 if let Some(segment) = path.segments.last() {
                     let ident = segment.ident.to_string();
-                    println!("Ident: {}", ident);
+                    // println!("Ident: {}", ident);
                     if let Some(def_id) = path.res.opt_def_id() {
                         let Some(node) = self.graph.tcx.hir().get_if_local(def_id) else {
                             return None;
@@ -231,7 +234,8 @@ impl<'tcx> Visitor<'tcx> for GraphVisitor<'tcx> {
                 if let Some(ident) = self.extract_ident_from_pat(*local.pat) {
                     if let Some(init_expr) = local.init {
                         if let Some(rhs_loc_infos) = self.extract_loc_infos(init_expr) {
-                            let span = local.span;
+                            // FIXME: local.pat can be 'mut x' -> start_pos starts from mut, not x
+                            let span = local.pat.span;
                             let src_map = self.graph.source_map();
                             let start_pos = src_map.lookup_char_pos(span.lo());
                             let file_path = src_map.span_to_filename(span);
