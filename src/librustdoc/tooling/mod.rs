@@ -137,9 +137,17 @@ impl GraphVisitor<'_> {
                 }
                 None
             },
-            // ExprKind::Field(_expr, _ident) => {
-            //     todo!()
-            // },
+            ExprKind::Field(base_expr, _filed_ident) => {
+                if let Some((hir_id, ident)) = self.get_hir_id_and_ident(base_expr) {
+                    if let Some(loc_info) = self.extract_loc_info_from_hir_id(hir_id, ident) {
+                        return Some(vec![loc_info])
+                    } else {
+                        return None
+                    }
+                } else {
+                    return None
+                }
+            },
             ExprKind::Path(_) => {
                 if let Some((hir_id, ident)) = self.get_hir_id_and_ident(expr) {
                     if let Some(loc_info) = self.extract_loc_info_from_hir_id(hir_id, ident) {
