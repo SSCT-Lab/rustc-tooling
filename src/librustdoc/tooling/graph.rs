@@ -36,13 +36,13 @@ impl<'tcx> DependencyGraph<'tcx> {
     }
 }
 
-pub struct GraphVisitor<'tcx> {
-    pub graph: DependencyGraph<'tcx>,
+pub struct GraphVisitor<'a, 'tcx> {
+    pub graph: &'a mut DependencyGraph<'tcx>,
     current_body_id: Option<rustc_hir::BodyId>,
 }
 
-impl<'tcx> GraphVisitor<'tcx> {
-    pub fn new(graph: DependencyGraph<'tcx>) -> Self {
+impl<'a, 'tcx> GraphVisitor<'a, 'tcx> {
+    pub fn new(graph: &'a mut DependencyGraph<'tcx>) -> Self {
         GraphVisitor {
             graph,
             current_body_id: None,
@@ -54,7 +54,7 @@ impl<'tcx> GraphVisitor<'tcx> {
     }
 }
 
-impl GraphVisitor<'_> {
+impl GraphVisitor<'_, '_> {
     // extract for lhs in assign expr
     fn extract_loc_info(&self, expr: &Expr<'_>) -> Option<LocInfo> {
         if let ExprKind::Path(qpath) = &expr.kind {
@@ -227,7 +227,7 @@ impl GraphVisitor<'_> {
     }
 }
 
-impl<'tcx> Visitor<'tcx> for GraphVisitor<'tcx> {
+impl<'a, 'tcx> Visitor<'tcx> for GraphVisitor<'a, 'tcx> {
     fn visit_item(&mut self, item: &'tcx rustc_hir::Item<'tcx>) {
         rustc_hir::intravisit::walk_item(self, item);
         if let rustc_hir::ItemKind::Fn(.., body_id) = &item.kind {
