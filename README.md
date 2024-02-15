@@ -14,7 +14,20 @@ export RUSTC=/home/cici/rustc-tooling/build/x86_64-unknown-linux-gnu/stage2/bin/
 export RUSTDOC=/home/cici/rustc-tooling/build/x86_64-unknown-linux-gnu/stage2/bin/tooling
 ```
 
+Office PC:
+```sh
+export RUSTC=/local/home/zixliu/rustc-tooling/build/x86_64-unknown-linux-gnu/stage2/bin/rustc
+export RUSTDOC=/local/home/zixliu/rustc-tooling/build/x86_64-unknown-linux-gnu/stage2/bin/tooling
+```
+
+
 4. usage
 ```sh
 cargo doc
 ```
+
+5. Project structure
+
+Main entrance: `./src/librustdoc/lib.rs::tooling_main_args()`
+
+Processing logic: `./src/librustdoc/tooling/mod.rs`
