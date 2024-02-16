@@ -44,13 +44,14 @@ struct All;
 
 impl<'hir> rustc_hir::intravisit::nested_filter::NestedFilter<'hir> for All {
     type Map = rustc_middle::hir::map::Map<'hir>;
-    const INTER: bool = true;
+    const INTER: bool = false;
     const INTRA: bool = true;
 }
 
 impl<'tcx> rustc_hir::intravisit::Visitor<'tcx> for HirVisitor<'tcx> {
     type Map = rustc_middle::hir::map::Map<'tcx>;
-    type NestedFilter = All;
+    //type NestedFilter = All;
+    type NestedFilter = rustc_middle::hir::nested_filter::OnlyBodies;
 
     fn nested_visit_map(&mut self) -> Self::Map {
         self.tcx.hir()
@@ -162,7 +163,7 @@ pub fn save_json_array_to_file(json_strings: Vec<String>, file_path: &str) -> st
 }
 
 pub fn get_infos(tcx: TyCtxt<'_>) {
-    let hir_krate = tcx.hir();
+    //let hir_krate = tcx.hir();
     //let source_map = tcx.sess.source_map();
     //parse(tcx);
 
@@ -171,9 +172,11 @@ pub fn get_infos(tcx: TyCtxt<'_>) {
         info: Vec::new(),
     };
 
-    for id in hir_krate.items() {
-        rustc_hir::intravisit::Visitor::visit_nested_item(&mut visitor, id);
-    }
+    tcx.hir().visit_all_item_likes_in_crate(&mut visitor);
+
+    // for id in hir_krate.items() {
+    //     rustc_hir::intravisit::Visitor::visit_nested_item(&mut visitor, id);
+    // }
 
     //println!("{:#?}", visitor.info);
 

@@ -17,7 +17,8 @@ export RUSTDOC=/home/cici/rustc-tooling/build/x86_64-unknown-linux-gnu/stage2/bi
 Office PC:
 ```sh
 export RUSTC=/local/home/zixliu/rustc-tooling/build/x86_64-unknown-linux-gnu/stage2/bin/rustc
-export RUSTDOC=/local/home/zixliu/rustc-tooling/build/x86_64-unknown-linux-gnu/stage2/bin/tooling
+export RUSTDOC=/local/home/zixliu/rustc-tooling/build/x86_64-unknown-linux-gnu/stage2/bin/rustdoc
+
 ```
 
 
