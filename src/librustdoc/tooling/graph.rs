@@ -255,6 +255,21 @@ impl<'a, 'tcx> Visitor<'tcx> for GraphVisitor<'a, 'tcx> {
                 }
             }
         }
+        
+        if let rustc_hir::ItemKind::Impl(impl_items) = &item.kind {
+            for impl_item_ref in impl_items.items.into_iter() {
+                let impl_item = self.graph.tcx.hir().impl_item(impl_item_ref.id);
+
+                match &impl_item.kind {
+                    rustc_hir::ImplItemKind::Fn(_, body_id) => {
+                        println!("{:?}", body_id);
+                        self.update_current_body_id(Some(*body_id));
+                    },
+                    _ => {}
+                }
+            }
+        }
+
         if let rustc_hir::ItemKind::Fn(.., body_id) = &item.kind {
             println!("{:?}", body_id);
             self.update_current_body_id(Some(*body_id));
