@@ -5,10 +5,12 @@ use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::ty::TyCtxt;
 use rustc_middle::hir::map::Map;
 use rustc_session::Session;
+use rustc_span::def_id::LocalDefId;
 use rustc_span::source_map::SourceMap;
-use rustc_hir::intravisit::Visitor;
-use rustc_hir::{Expr, ExprKind, HirId, Local, QPath};
+use rustc_hir::intravisit::{FnKind, Visitor};
+use rustc_hir::{BodyId, Expr, ExprKind, FnDecl, HirId, Local, QPath};
 use rustc_hir::Node;
+use rustc_span::Span;
 
 use super::utils;
 
@@ -235,51 +237,57 @@ impl<'a, 'tcx> Visitor<'tcx> for GraphVisitor<'a, 'tcx> {
         self.graph.tcx.hir()
     }
 
-    fn visit_item(&mut self, item: &'tcx rustc_hir::Item<'tcx>) {
-        // println!("visit item: {}", item.ident);
-        if let rustc_hir::ItemKind::Trait(_, _, _, _, trait_item_refs) = &item.kind {
-            for trait_item_ref in trait_item_refs.into_iter() {
-                let trait_item = self.graph.tcx.hir().trait_item(trait_item_ref.id);
+    // fn visit_item(&mut self, item: &'tcx rustc_hir::Item<'tcx>) {
+    //     // println!("visit item: {}", item.ident);
+    //     if let rustc_hir::ItemKind::Trait(_, _, _, _, trait_item_refs) = &item.kind {
+    //         for trait_item_ref in trait_item_refs.into_iter() {
+    //             let trait_item = self.graph.tcx.hir().trait_item(trait_item_ref.id);
 
-                match &trait_item.kind {
-                    rustc_hir::TraitItemKind::Fn(_, function) => {
-                        match function {
-                            rustc_hir::TraitFn::Provided(body_id) => {
-                                println!("{:?}", body_id);
-                                self.update_current_body_id(Some(*body_id));
-                            }, 
-                            _ => {}
-                        }
-                    },
-                    _ => {}
-                }
-            }
-        }
+    //             match &trait_item.kind {
+    //                 rustc_hir::TraitItemKind::Fn(_, function) => {
+    //                     match function {
+    //                         rustc_hir::TraitFn::Provided(body_id) => {
+    //                             println!("visit_trait_fn: {:?}", body_id);
+    //                             self.update_current_body_id(Some(*body_id));
+    //                         }, 
+    //                         _ => {}
+    //                     }
+    //                 },
+    //                 _ => {}
+    //             }
+    //         }
+    //     }
         
-        if let rustc_hir::ItemKind::Impl(impl_items) = &item.kind {
-            for impl_item_ref in impl_items.items.into_iter() {
-                let impl_item = self.graph.tcx.hir().impl_item(impl_item_ref.id);
+    //     if let rustc_hir::ItemKind::Impl(impl_items) = &item.kind {
+    //         for impl_item_ref in impl_items.items.into_iter() {
+    //             let impl_item = self.graph.tcx.hir().impl_item(impl_item_ref.id);
 
-                match &impl_item.kind {
-                    rustc_hir::ImplItemKind::Fn(_, body_id) => {
-                        println!("{:?}", body_id);
-                        self.update_current_body_id(Some(*body_id));
-                    },
-                    _ => {}
-                }
-            }
-        }
+    //             match &impl_item.kind {
+    //                 rustc_hir::ImplItemKind::Fn(_, body_id) => {
+    //                     println!("visit_impl_fn: {:?}", body_id);
+    //                     self.update_current_body_id(Some(*body_id));
+    //                 },
+    //                 _ => {}
+    //             }
+    //         }
+    //     }
 
-        if let rustc_hir::ItemKind::Fn(.., body_id) = &item.kind {
-            println!("{:?}", body_id);
-            self.update_current_body_id(Some(*body_id));
-        }
+    //     if let rustc_hir::ItemKind::Fn(.., body_id) = &item.kind {
+    //         println!("visit_fn: {:?}", body_id);
+    //         self.update_current_body_id(Some(*body_id));
+    //     }
 
-        rustc_hir::intravisit::walk_item(self, item);
+    //     rustc_hir::intravisit::walk_item(self, item);
+    // }
+
+    fn visit_fn(&mut self, fk: FnKind<'tcx>, fd: &'tcx FnDecl<'tcx>, b: BodyId, _: Span, id: LocalDefId) {
+        // println!("visit real fn");
+        self.update_current_body_id(Some(b));
+
+        rustc_hir::intravisit::walk_fn(self, fk, fd, b, id)
     }
 
     fn visit_local(&mut self, local: &'tcx Local<'tcx>) {
-        // println!("Visiting local stmt.");
         if let Some(ident) = self.extract_ident_from_pat(*local.pat) {
             if let Some(init_expr) = local.init {
                 if let Some(rhs_loc_infos) = self.extract_loc_infos(init_expr) {
@@ -288,6 +296,8 @@ impl<'a, 'tcx> Visitor<'tcx> for GraphVisitor<'a, 'tcx> {
                     let src_map = self.graph.source_map();
                     let start_pos = src_map.lookup_char_pos(span.lo());
                     let file_path = src_map.span_to_filename(span);
+
+                    // println!("Visiting local stmt: {}", ident);
 
                     let lhs_loc_info = LocInfo {
                         ident,
