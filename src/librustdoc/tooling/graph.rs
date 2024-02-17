@@ -7,7 +7,7 @@ use rustc_middle::hir::map::Map;
 use rustc_session::Session;
 use rustc_span::source_map::SourceMap;
 use rustc_hir::intravisit::Visitor;
-use rustc_hir::{Expr, ExprKind, HirId, QPath};
+use rustc_hir::{Expr, ExprKind, HirId, Local, QPath};
 use rustc_hir::Node;
 
 use super::utils;
@@ -138,9 +138,9 @@ impl GraphVisitor<'_, '_> {
             },
             ExprKind::Field(base_expr, _filed_ident) => {
                 if let Some((hir_id, ident)) = self.get_hir_id_and_ident(base_expr) {
-                    println!("ident: {}", ident);
+                    // println!("ident: {}", ident);
                     if let Some(loc_info) = self.extract_loc_info_from_hir_id(hir_id, ident) {
-                        println!("loc_info: {:?}", loc_info);
+                        // println!("loc_info: {:?}", loc_info);
                         return Some(vec![loc_info])
                     } else {
                         return None
@@ -228,52 +228,73 @@ impl GraphVisitor<'_, '_> {
 }
 
 impl<'a, 'tcx> Visitor<'tcx> for GraphVisitor<'a, 'tcx> {
-    fn visit_item(&mut self, item: &'tcx rustc_hir::Item<'tcx>) {
-        rustc_hir::intravisit::walk_item(self, item);
-        if let rustc_hir::ItemKind::Fn(.., body_id) = &item.kind {
-            self.update_current_body_id(Some(*body_id));
-            let body = self.graph.tcx.hir().body(*body_id);
-            self.visit_body(body);
-        }
+    type Map = rustc_middle::hir::map::Map<'tcx>;
+    type NestedFilter = rustc_middle::hir::nested_filter::All;
+
+    fn nested_visit_map(&mut self) -> Self::Map {
+        self.graph.tcx.hir()
     }
 
-    fn visit_stmt(&mut self, stmt: &'tcx rustc_hir::Stmt<'tcx>) {
-        use rustc_hir::StmtKind::*;
+    fn visit_item(&mut self, item: &'tcx rustc_hir::Item<'tcx>) {
+        // println!("visit item: {}", item.ident);
+        if let rustc_hir::ItemKind::Trait(_, _, _, _, trait_item_refs) = &item.kind {
+            for trait_item_ref in trait_item_refs.into_iter() {
+                let trait_item = self.graph.tcx.hir().trait_item(trait_item_ref.id);
 
-        match stmt.kind {
-            Local(local) => {
-                if let Some(ident) = self.extract_ident_from_pat(*local.pat) {
-                    if let Some(init_expr) = local.init {
-                        if let Some(rhs_loc_infos) = self.extract_loc_infos(init_expr) {
-                            // FIXME: local.pat can be 'mut x' -> start_pos starts from mut, not x
-                            let span = local.pat.span;
-                            let src_map = self.graph.source_map();
-                            let start_pos = src_map.lookup_char_pos(span.lo());
-                            let file_path = src_map.span_to_filename(span);
-
-                            let lhs_loc_info = LocInfo {
-                                ident,
-                                line_num: start_pos.line,
-                                col_num: start_pos.col_display,
-                                file_path: utils::filename_to_pathbuf(&file_path),
-                            };
-
-                            self.graph.lhs_to_loc_info.entry(lhs_loc_info)
-                                .or_insert(Vec::new())
-                                .extend(rhs_loc_infos)
+                match &trait_item.kind {
+                    rustc_hir::TraitItemKind::Fn(_, function) => {
+                        match function {
+                            rustc_hir::TraitFn::Provided(body_id) => {
+                                println!("{:?}", body_id);
+                                self.update_current_body_id(Some(*body_id));
+                            }, 
+                            _ => {}
                         }
-                    }
+                    },
+                    _ => {}
                 }
             }
-            _ => {}
+        }
+        if let rustc_hir::ItemKind::Fn(.., body_id) = &item.kind {
+            println!("{:?}", body_id);
+            self.update_current_body_id(Some(*body_id));
         }
 
-        rustc_hir::intravisit::walk_stmt(self, stmt);
+        rustc_hir::intravisit::walk_item(self, item);
+    }
+
+    fn visit_local(&mut self, local: &'tcx Local<'tcx>) {
+        // println!("Visiting local stmt.");
+        if let Some(ident) = self.extract_ident_from_pat(*local.pat) {
+            if let Some(init_expr) = local.init {
+                if let Some(rhs_loc_infos) = self.extract_loc_infos(init_expr) {
+                    // FIXME: local.pat can be 'mut x' -> start_pos starts from mut, not x
+                    let span = local.pat.span;
+                    let src_map = self.graph.source_map();
+                    let start_pos = src_map.lookup_char_pos(span.lo());
+                    let file_path = src_map.span_to_filename(span);
+
+                    let lhs_loc_info = LocInfo {
+                        ident,
+                        line_num: start_pos.line,
+                        col_num: start_pos.col_display,
+                        file_path: utils::filename_to_pathbuf(&file_path),
+                    };
+
+                    self.graph.lhs_to_loc_info.entry(lhs_loc_info)
+                        .or_insert(Vec::new())
+                        .extend(rhs_loc_infos)
+                }
+            }
+        }
+
+        rustc_hir::intravisit::walk_local(self, local);
     }
     
 
     fn visit_expr(&mut self, ex: &'tcx Expr<'tcx>) {
         if let ExprKind::Assign(lhs, rhs, _) = &ex.kind {
+            // println!("Visiting assign expr.");
             // Extract location information for the lhs of the assignment
             if let Some(lhs_loc_info) = self.extract_loc_info(lhs) {
                 // Initialize a vector to hold LocInfo objects for all expressions contributing to the rhs value
@@ -286,9 +307,11 @@ impl<'a, 'tcx> Visitor<'tcx> for GraphVisitor<'a, 'tcx> {
 
                 // Update the lhs_to_loc_info map in the DependencyGraph
                 // If there's already an entry for this lhs, append to it; otherwise, create a new entry
-                self.graph.lhs_to_loc_info.entry(lhs_loc_info)
+                if !rhs_loc_infos.is_empty() {
+                    self.graph.lhs_to_loc_info.entry(lhs_loc_info)
                     .and_modify(|e| e.extend(rhs_loc_infos.clone()))
                     .or_insert(rhs_loc_infos);
+                }
             }
         } else if let ExprKind::AssignOp(_, lhs, rhs) = &ex.kind {
             if let Some(lhs_loc_info) = self.extract_loc_info(lhs) {
@@ -302,11 +325,14 @@ impl<'a, 'tcx> Visitor<'tcx> for GraphVisitor<'a, 'tcx> {
 
                 // Update the lhs_to_loc_info map in the DependencyGraph
                 // If there's already an entry for this lhs, append to it; otherwise, create a new entry
-                self.graph.lhs_to_loc_info.entry(lhs_loc_info)
+                if !rhs_loc_infos.is_empty() {
+                    self.graph.lhs_to_loc_info.entry(lhs_loc_info)
                     .and_modify(|e| e.extend(rhs_loc_infos.clone()))
                     .or_insert(rhs_loc_infos);
+                }
             }
         }
+
         rustc_hir::intravisit::walk_expr(self, ex);
     }
 }

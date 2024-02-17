@@ -18,17 +18,18 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
     let mut visitor = GraphVisitor::new(&mut dependency_graph);
 
     // Visit all item likes in the crate
-    tcx.hir().visit_all_item_likes_in_crate(&mut visitor);
+    // tcx.hir().visit_all_item_likes_in_crate(&mut visitor);
+    tcx.hir().walk_toplevel_module(&mut visitor);
 
     let start_time = Instant::now();
 
     println!("Generate dependency graph...");
-    // for (lhs, rhs_vec) in &visitor.graph.lhs_to_loc_info {
-    //     println!("LHS: {:?}", lhs);
-    //     for rhs in rhs_vec {
-    //         println!("\tRHS: {:?}", rhs);
-    //     }
-    // }
+    for (lhs, rhs_vec) in &visitor.graph.lhs_to_loc_info {
+        println!("LHS: {:?}", lhs);
+        for rhs in rhs_vec {
+            println!("\tRHS: {:?}", rhs);
+        }
+    }
     utils::insert_dependency_graph(&mut dependency_graph);
 
     let elapsed_time = start_time.elapsed().as_secs();
