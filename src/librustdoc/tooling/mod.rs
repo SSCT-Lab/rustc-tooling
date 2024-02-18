@@ -1,11 +1,11 @@
-mod graph;
 mod utils;
 mod database;
+mod fault_localization;
 
 use std::time::Instant;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::ty::TyCtxt;
-use graph::{DependencyGraph, GraphVisitor};
+use fault_localization::graph::{DependencyGraph, GraphVisitor};
 
 pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
     let hir = tcx.hir();

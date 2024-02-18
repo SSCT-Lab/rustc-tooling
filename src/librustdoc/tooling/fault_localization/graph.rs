@@ -12,7 +12,7 @@ use rustc_hir::{BodyId, Expr, ExprKind, FnDecl, HirId, Local, QPath};
 use rustc_hir::Node;
 use rustc_span::Span;
 
-use super::utils;
+use crate::tooling::utils;
 
 #[derive(Debug, Eq, Hash, PartialEq, Clone)] 
 pub(crate) struct LocInfo {

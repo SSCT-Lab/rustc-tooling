@@ -9,7 +9,7 @@ use diesel::sql_function;
 
 use diesel::prelude::*;
 
-use super::graph::DependencyGraph;
+use super::fault_localization::graph::DependencyGraph;
 
 pub fn filename_to_pathbuf(file_name: &FileName) -> PathBuf {
     match file_name {
