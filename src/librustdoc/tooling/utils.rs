@@ -80,37 +80,57 @@ pub fn insert_dependency(dep_lhs_id: i32, dep_rhs_id: i32) {
         .expect("Error inserting dependency");
 }
 
+
+sql_function!(fn instr(x: diesel::sql_types::Text, y: diesel::sql_types::Text) -> diesel::sql_types::Integer);
+#[allow(non_snake_case)]
+#[allow(dead_code)]
 pub fn select_locInfo(filePath:String,line:i32,col:i32)->LocInfo
 {
     let conn = &mut get_connection();
-    let results=loc_info.filter(filePath.like(file_path))
+    let filter_expr = instr(file_path, filePath);
+    let results=loc_info.filter(filter_expr.gt(0))
                         .filter(line_num.eq(line))
                         .filter(col_num.eq(col))
                         .limit(1)
-                        .load::<LocInfo>(&connection)
+                        .load::<LocInfo>(conn)
                         .expect("Failed to load LocInfo");
-    for l in results {
-        l
+    let temp=results.get(0).unwrap();
+    LocInfo{
+        id:temp.id,
+        ident:temp.ident.clone(),
+        line_num:temp.line_num,
+        col_num:temp.col_num,
+        file_path:temp.file_path.clone(),
     }
 }
 
+#[allow(non_snake_case)]
+#[allow(dead_code)]
 pub fn select_Dep(loc:LocInfo)->Vec<Dependency>
 {
     let conn = &mut get_connection();
     let results=dependencies.filter(lhs_id.eq(loc.id))
-                        .load::<Dependency>(&connection)
+                        .load::<Dependency>(conn)
                         .expect("Failed to load LocInfo");
     results
 }
 
+#[allow(non_snake_case)]
+#[allow(dead_code)]
 pub fn select_LocInfo_by_id(idin:i32)->LocInfo
 {
+    use super::database::schema::loc_info::dsl::*;
     let conn = &mut get_connection();
     let results=loc_info.filter(id.eq(idin))
                         .limit(1)
-                        .load::<LocInfo>(&connection)
+                        .load::<LocInfo>(conn)
                         .expect("Failed to load LocInfo");
-    for l in results {
-        l
+    let temp=results.get(0).unwrap();
+    LocInfo{
+        id:temp.id,
+        ident:temp.ident.clone(),
+        line_num:temp.line_num,
+        col_num:temp.col_num,
+        file_path:temp.file_path.clone(),
     }
 }
