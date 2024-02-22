@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use rustc_span::{FileName, FileNameDisplayPreference};
 use diesel::mysql::MysqlConnection;
-use super::database::model::{NewDependency, NewLocInfo};
+use super::database::model::{NewDependency, NewLocInfo,LocInfo,Dependency};
 use super::database::schema::loc_info::dsl::*;
 use super::database::schema::dependencies::dsl::*;
 use diesel::sql_function;
@@ -78,4 +78,39 @@ pub fn insert_dependency(dep_lhs_id: i32, dep_rhs_id: i32) {
         .values(&new_dep)
         .execute(conn)
         .expect("Error inserting dependency");
+}
+
+pub fn select_locInfo(filePath:String,line:i32,col:i32)->LocInfo
+{
+    let conn = &mut get_connection();
+    let results=loc_info.filter(filePath.like(file_path))
+                        .filter(line_num.eq(line))
+                        .filter(col_num.eq(col))
+                        .limit(1)
+                        .load::<LocInfo>(&connection)
+                        .expect("Failed to load LocInfo");
+    for l in results {
+        l
+    }
+}
+
+pub fn select_Dep(loc:LocInfo)->Vec<Dependency>
+{
+    let conn = &mut get_connection();
+    let results=dependencies.filter(lhs_id.eq(loc.id))
+                        .load::<Dependency>(&connection)
+                        .expect("Failed to load LocInfo");
+    results
+}
+
+pub fn select_LocInfo_by_id(idin:i32)->LocInfo
+{
+    let conn = &mut get_connection();
+    let results=loc_info.filter(id.eq(idin))
+                        .limit(1)
+                        .load::<LocInfo>(&connection)
+                        .expect("Failed to load LocInfo");
+    for l in results {
+        l
+    }
 }
