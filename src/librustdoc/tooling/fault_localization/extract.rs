@@ -4,7 +4,7 @@ use regex::Regex;
 
 use crate::tooling::{database::model::LocInfo, utils::{select_dep, select_loc_info, select_loc_info_by_id}};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct FaultLoc {
     pub ident: String,
     pub line_num: usize,

@@ -2,10 +2,12 @@ mod utils;
 mod database;
 mod fault_localization;
 
-use std::time::Instant;
+use std::{path::PathBuf, time::Instant};
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::ty::TyCtxt;
 use fault_localization::graph::{DependencyGraph, GraphVisitor};
+
+use crate::tooling::fault_localization::extract::extract_backtrace;
 
 pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
     let hir = tcx.hir();
@@ -34,4 +36,10 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
 
     let elapsed_time = start_time.elapsed().as_secs();
     println!("Finish generating dependency graph! Elapsed time: {:?}", elapsed_time);
+
+    let fault_locs = extract_backtrace(PathBuf::from("backtrace"));
+    println!("Fault localization begins.");
+    for fault_loc in fault_locs {
+        println!("{:?}", fault_loc);
+    }
 }
