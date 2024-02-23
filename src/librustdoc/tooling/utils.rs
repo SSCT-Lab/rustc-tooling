@@ -80,18 +80,11 @@ pub fn insert_dependency(dep_lhs_id: i32, dep_rhs_id: i32) {
         .expect("Error inserting dependency");
 }
 
-sql_function!(
-    fn instr(
-        x: diesel::sql_types::Text,
-        y: diesel::sql_types::Text
-    ) -> diesel::sql_types::Integer
-);
 
 pub fn select_loc_info(path: String, line: i32, _col: i32) -> LocInfo {
     let conn = &mut get_connection();
 
-    let filter_expr = instr(file_path, path);
-    let results = loc_info.filter(filter_expr.gt(0))
+    let results = loc_info.filter(file_path.eq(path))
                         .filter(line_num.eq(line))
                         // .filter(col_num.eq(col))
                         .limit(1)
