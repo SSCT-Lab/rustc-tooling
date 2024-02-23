@@ -4,6 +4,7 @@ use regex::Regex;
 
 use crate::tooling::{database::model::LocInfo, utils::{select_dep, select_loc_info, select_loc_info_by_id}};
 
+#[derive(Clone)]
 pub struct FaultLoc {
     pub ident: String,
     pub line_num: usize,
@@ -79,9 +80,9 @@ pub fn extract_backtrace(path: PathBuf) -> Vec<FaultLoc> {
                         is_dep,
                         depth,
                     };
-                    fault_locs.push(lhs);
+                    fault_locs.push(lhs.clone());
 
-                    let mut dependencies = find_dependencies(lhs);
+                    let mut dependencies = find_dependencies(lhs.clone());
                     if !dependencies.is_empty() {
                         fault_locs.append(&mut dependencies);
                     }
