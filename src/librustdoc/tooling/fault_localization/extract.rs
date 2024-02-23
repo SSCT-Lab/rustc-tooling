@@ -62,10 +62,16 @@ pub fn extract_backtrace(path: PathBuf) -> Vec<FaultLoc> {
 
             if let Some(Ok(line2)) = lines.next() {
                 if let Some(caps) = re_line2.captures(&line2) {
-                    let file_path = PathBuf::from(&caps[1]);
+                    let mut file_path = PathBuf::from(&caps[1]);
 
                     if file_path.display().to_string().contains("/rustc") {
                         continue;
+                    }
+
+                    let file_path_str = file_path.display().to_string();
+                    if let Some(src_index) = file_path_str.find("src/") {
+                        let trimmed_path = &file_path_str[src_index..];
+                        file_path = PathBuf::from(trimmed_path);
                     }
 
                     let line_num = caps[2].parse::<usize>().unwrap_or(0);
