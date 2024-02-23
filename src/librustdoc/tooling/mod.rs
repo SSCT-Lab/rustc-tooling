@@ -37,7 +37,7 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
     let elapsed_time = start_time.elapsed().as_secs();
     println!("Finish generating dependency graph! Elapsed time: {:?}", elapsed_time);
 
-    let fault_locs = extract_backtrace(PathBuf::from("backtrace"));
+    let fault_locs = extract_backtrace(PathBuf::from("./src/backtrace"));
     println!("Fault localization begins.");
     for fault_loc in fault_locs {
         println!("{:?}", fault_loc);

@@ -87,13 +87,13 @@ sql_function!(
     ) -> diesel::sql_types::Integer
 );
 
-pub fn select_loc_info(path: String, line: i32, col: i32) -> LocInfo {
+pub fn select_loc_info(path: String, line: i32, _col: i32) -> LocInfo {
     let conn = &mut get_connection();
 
     let filter_expr = instr(file_path, path);
     let results = loc_info.filter(filter_expr.gt(0))
                         .filter(line_num.eq(line))
-                        .filter(col_num.eq(col))
+                        // .filter(col_num.eq(col))
                         .limit(1)
                         .load::<LocInfo>(conn)
                         .expect("Failed to load LocInfo");
