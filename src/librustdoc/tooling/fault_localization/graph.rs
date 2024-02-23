@@ -162,6 +162,19 @@ impl GraphVisitor<'_, '_> {
                     None
                 }
             },
+            ExprKind::Index(array_expr, index_expr, _) => {
+                let mut loc_infos = Vec::new();
+
+                if let Some(array_loc_info) = self.extract_loc_info(array_expr) {
+                    loc_infos.push(array_loc_info);
+                }
+
+                if let Some(index_loc_info) = self.extract_loc_info(index_expr) {
+                    loc_infos.push(index_loc_info);
+                }
+
+                Some(loc_infos)
+            },
             _ => None,
         }
     }

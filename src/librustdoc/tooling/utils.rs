@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use rustc_span::{FileName, FileNameDisplayPreference};
 use diesel::mysql::MysqlConnection;
-use super::database::model::{NewDependency, NewLocInfo};
+use super::database::model::{NewDependency, NewLocInfo,LocInfo,Dependency};
 use super::database::schema::loc_info::dsl::*;
 use super::database::schema::dependencies::dsl::*;
 use diesel::sql_function;
@@ -78,4 +78,62 @@ pub fn insert_dependency(dep_lhs_id: i32, dep_rhs_id: i32) {
         .values(&new_dep)
         .execute(conn)
         .expect("Error inserting dependency");
+}
+
+sql_function!(
+    fn instr(
+        x: diesel::sql_types::Text,
+        y: diesel::sql_types::Text
+    ) -> diesel::sql_types::Integer
+);
+
+pub fn select_loc_info(path: String, line: i32, _col: i32) -> LocInfo {
+    let conn = &mut get_connection();
+
+    let filter_expr = instr(file_path, path);
+    let results = loc_info.filter(filter_expr.gt(0))
+                        .filter(line_num.eq(line))
+                        // .filter(col_num.eq(col))
+                        .limit(1)
+                        .load::<LocInfo>(conn)
+                        .expect("Failed to load LocInfo");
+    let temp=results.get(0).unwrap();
+
+    LocInfo {
+        id: temp.id,
+        ident: temp.ident.clone(),
+        line_num: temp.line_num,
+        col_num: temp.col_num,
+        file_path: temp.file_path.clone(),
+    }
+}
+
+
+pub fn select_dep(loc: &LocInfo) -> Vec<Dependency> {
+    let conn = &mut get_connection();
+    let results = dependencies.filter(lhs_id.eq(loc.id))
+                        .load::<Dependency>(conn)
+                        .expect("Failed to load LocInfo");
+    results
+}
+
+
+pub fn select_loc_info_by_id(id_in: i32) -> LocInfo {
+    use super::database::schema::loc_info::dsl::*;
+
+    let conn = &mut get_connection();
+
+    let results = loc_info.filter(id.eq(id_in))
+                        .limit(1)
+                        .load::<LocInfo>(conn)
+                        .expect("Failed to load LocInfo");
+    let temp = results.get(0).unwrap();
+
+    LocInfo {
+        id:temp.id,
+        ident:temp.ident.clone(),
+        line_num:temp.line_num,
+        col_num:temp.col_num,
+        file_path:temp.file_path.clone(),
+    }
 }

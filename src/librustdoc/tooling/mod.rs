@@ -9,6 +9,8 @@ use rustc_middle::ty::TyCtxt;
 use fault_localization::graph::{DependencyGraph, GraphVisitor};
 
 use crate::tooling::patch_generation::transform::Transform;
+use crate::tooling::fault_localization::extract::extract_backtrace;
+
 
 pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
     let hir = tcx.hir();
@@ -38,8 +40,14 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
     let elapsed_time = start_time.elapsed().as_secs();
     println!("Finish generating dependency graph! Elapsed time: {:?}", elapsed_time);
 
-    let output_path = Some(PathBuf::from("test.txt"));
-    let keys_vec: Vec<_> = dependency_graph.lhs_to_loc_info.keys().cloned().collect();
-    let transform = Transform::new(output_path, keys_vec);
-    transform.transform();
+//     let output_path = Some(PathBuf::from("test.txt"));
+//     let keys_vec: Vec<_> = dependency_graph.lhs_to_loc_info.keys().cloned().collect();
+//     let transform = Transform::new(output_path, keys_vec);
+//     transform.transform();
+  
+    let fault_locs = extract_backtrace(PathBuf::from("./src/backtrace"));
+    println!("Fault localization begins.");
+    for fault_loc in fault_locs {
+        println!("{:?}", fault_loc);
+    }
 }
