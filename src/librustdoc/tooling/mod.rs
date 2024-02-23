@@ -39,15 +39,14 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
 
     let elapsed_time = start_time.elapsed().as_secs();
     println!("Finish generating dependency graph! Elapsed time: {:?}", elapsed_time);
-
-//     let output_path = Some(PathBuf::from("test.txt"));
-//     let keys_vec: Vec<_> = dependency_graph.lhs_to_loc_info.keys().cloned().collect();
-//     let transform = Transform::new(output_path, keys_vec);
-//     transform.transform();
   
     let fault_locs = extract_backtrace(PathBuf::from("./src/backtrace"));
     println!("Fault localization begins.");
-    for fault_loc in fault_locs {
+    for fault_loc in fault_locs.clone() {
         println!("{:?}", fault_loc);
     }
+
+    let output_path = Some(PathBuf::from("test.txt"));
+    let transform = Transform::new(output_path, fault_locs.clone());
+    transform.transform();
 }
