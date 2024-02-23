@@ -1,11 +1,14 @@
 mod utils;
 mod database;
 mod fault_localization;
+mod patch_generation;
 
-use std::time::Instant;
+use std::{path::PathBuf, time::Instant};
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::ty::TyCtxt;
 use fault_localization::graph::{DependencyGraph, GraphVisitor};
+
+use crate::tooling::patch_generation::transform::Transform;
 
 pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
     let hir = tcx.hir();
@@ -34,4 +37,9 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
 
     let elapsed_time = start_time.elapsed().as_secs();
     println!("Finish generating dependency graph! Elapsed time: {:?}", elapsed_time);
+
+    let output_path = Some(PathBuf::from("test.txt"));
+    let keys_vec: Vec<_> = dependency_graph.lhs_to_loc_info.keys().cloned().collect();
+    let transform = Transform::new(output_path, keys_vec);
+    transform.transform();
 }
