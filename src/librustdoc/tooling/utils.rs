@@ -109,7 +109,7 @@ pub fn select_loc_info(path: String, line: i32, col: i32) -> LocInfo {
 }
 
 
-pub fn select_dep(loc: LocInfo) -> Vec<Dependency> {
+pub fn select_dep(loc: &LocInfo) -> Vec<Dependency> {
     let conn = &mut get_connection();
     let results = dependencies.filter(lhs_id.eq(loc.id))
                         .load::<Dependency>(conn)

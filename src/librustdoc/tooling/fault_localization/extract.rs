@@ -2,6 +2,8 @@ use std::{fs::File, io::{BufRead, BufReader}, path::PathBuf};
 
 use regex::Regex;
 
+use crate::tooling::{database::model::LocInfo, utils::{select_dep, select_loc_info, select_loc_info_by_id}};
+
 pub struct FaultLoc {
     pub ident: String,
     pub line_num: usize,
@@ -9,6 +11,33 @@ pub struct FaultLoc {
     pub file_path: PathBuf,
     pub is_dep: bool,
     pub depth: i32,
+}
+
+impl FaultLoc {
+    pub fn new(loc_info: LocInfo, is_dep: bool, depth: i32) -> Self {
+        FaultLoc {
+            ident: loc_info.ident,
+            line_num: loc_info.line_num as usize,
+            col_num: loc_info.col_num as usize,
+            file_path: PathBuf::from(&loc_info.file_path),
+            is_dep,
+            depth,
+        }
+    }
+}
+
+pub fn find_dependencies(lhs: FaultLoc) -> Vec<FaultLoc> {
+    let lhs_loc = select_loc_info(lhs.file_path.display().to_string(), lhs.line_num as i32, lhs.col_num as i32);
+    let mut dependencies = Vec::new();
+
+    let deps = select_dep(&lhs_loc);
+    for dep in deps {
+        let rhs_loc = select_loc_info_by_id(dep.rhs_id);
+        let rhs_dep = FaultLoc::new(rhs_loc, true, lhs.depth);
+        dependencies.push(rhs_dep);
+    }
+
+    dependencies
 }
 
 pub fn extract_backtrace(path: PathBuf) -> Vec<FaultLoc> {
@@ -42,14 +71,20 @@ pub fn extract_backtrace(path: PathBuf) -> Vec<FaultLoc> {
                     let col_num = caps[3].parse::<usize>().unwrap_or(0);
                     let is_dep = false;
 
-                    fault_locs.push(FaultLoc {
+                    let lhs = FaultLoc {
                         ident,
                         line_num,
                         col_num,
                         file_path,
                         is_dep,
                         depth,
-                    });
+                    };
+                    fault_locs.push(lhs);
+
+                    let mut dependencies = find_dependencies(lhs);
+                    if !dependencies.is_empty() {
+                        fault_locs.append(&mut dependencies);
+                    }
                 }
             }
         }
