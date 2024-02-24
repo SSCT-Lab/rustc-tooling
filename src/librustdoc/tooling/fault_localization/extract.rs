@@ -75,7 +75,7 @@ pub fn extract_backtrace(path: PathBuf) -> Vec<FaultLoc> {
                     }
 
                     let line_num = caps[2].parse::<usize>().unwrap_or(0);
-                    let col_num = caps[3].parse::<usize>().unwrap_or(0);
+                    let col_num = caps[3].parse::<usize>().unwrap_or(0) - 1;
                     let is_dep = false;
 
                     let lhs = FaultLoc {

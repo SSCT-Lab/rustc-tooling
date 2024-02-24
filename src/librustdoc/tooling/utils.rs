@@ -81,16 +81,17 @@ pub fn insert_dependency(dep_lhs_id: i32, dep_rhs_id: i32) {
 }
 
 
-pub fn select_loc_info(path: String, line: i32, _col: i32) -> LocInfo {
+pub fn select_loc_info(path: String, line: i32, col: i32) -> LocInfo {
     let conn = &mut get_connection();
 
     let results = loc_info.filter(file_path.eq(path))
                         .filter(line_num.eq(line))
-                        // .filter(col_num.eq(col))
+                        .filter(col_num.eq(col))
                         .limit(1)
                         .load::<LocInfo>(conn)
                         .expect("Failed to load LocInfo");
-    let temp=results.get(0).unwrap();
+    
+    let temp = results.get(0).unwrap();
 
     LocInfo {
         id: temp.id,
