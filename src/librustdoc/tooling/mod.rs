@@ -3,7 +3,8 @@ mod database;
 mod fault_localization;
 mod patch_generation;
 
-use std::{path::PathBuf, time::Instant};
+use std::path::PathBuf;
+// use std::time::Instant;
 use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::ty::TyCtxt;
 use fault_localization::graph::{DependencyGraph, GraphVisitor};
@@ -26,9 +27,9 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
     // tcx.hir().visit_all_item_likes_in_crate(&mut visitor);
     tcx.hir().walk_toplevel_module(&mut visitor);
 
-    let start_time = Instant::now();
+    // let start_time = Instant::now();
 
-    println!("Generate dependency graph...");
+    println!("Dependency graph generation begins.");
     for (lhs, rhs_vec) in &visitor.graph.lhs_to_loc_info {
         println!("LHS: {:?}", lhs);
         for rhs in rhs_vec {
@@ -37,8 +38,8 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
     }
     utils::insert_dependency_graph(&mut dependency_graph);
 
-    let elapsed_time = start_time.elapsed().as_secs();
-    println!("Finish generating dependency graph! Elapsed time: {:?}", elapsed_time);
+    // let elapsed_time = start_time.elapsed().as_secs();
+    // println!("Finish generating dependency graph! Elapsed time: {:?}", elapsed_time);
   
     let fault_locs = extract_backtrace(PathBuf::from("./src/backtrace"));
     println!("Fault localization begins.");
@@ -46,6 +47,7 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
         println!("{:?}", fault_loc);
     }
 
+    println!("Patch Generation begins.");
     let output_path = Some(PathBuf::from("test.rs"));
     let transform = Transform::new(output_path, fault_locs.clone());
     transform.transform();

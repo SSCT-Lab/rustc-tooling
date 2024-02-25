@@ -3,7 +3,6 @@ use syn::spanned::Spanned;
 
 use crate::tooling::fault_localization::extract::FaultLoc;
 
-#[allow(unused)]
 pub(crate) struct Transform {
     pub output_path: Option<PathBuf>,
     pub fault_locs: Vec<FaultLoc>
@@ -74,7 +73,7 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                 let end = span.end().line;
                 
                 if self.get_loc_num().0 <= end as i32 && self.get_loc_num().0 >= start as i32 {
-                    println!("{start} <= {} <= {end}", self.get_loc_num().0);
+                    // println!("{start} <= {} <= {end}", self.get_loc_num().0);
                     let rhs = &expr_assign.right;
 
                     let modified_rhs = syn::parse_quote! {
