@@ -46,7 +46,7 @@ pub fn analyze_dependencies(tcx: TyCtxt<'_>) {
         println!("{:?}", fault_loc);
     }
 
-    let output_path = Some(PathBuf::from("test.txt"));
+    let output_path = Some(PathBuf::from("test.rs"));
     let transform = Transform::new(output_path, fault_locs.clone());
     transform.transform();
 }
