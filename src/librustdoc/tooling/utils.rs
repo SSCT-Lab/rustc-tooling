@@ -81,7 +81,7 @@ pub fn insert_dependency(dep_lhs_id: i32, dep_rhs_id: i32) {
 }
 
 
-pub fn select_loc_info(path: String, line: i32, col: i32) -> LocInfo {
+pub fn select_loc_info(path: String, line: i32, col: i32) -> Option<LocInfo> {
     let conn = &mut get_connection();
 
     let results = loc_info.filter(file_path.eq(path))
@@ -91,17 +91,19 @@ pub fn select_loc_info(path: String, line: i32, col: i32) -> LocInfo {
                         .load::<LocInfo>(conn)
                         .expect("Failed to load LocInfo");
     
-    let temp = results.get(0).unwrap();
+    let temp = match results.get(0) {
+        Some(temp) => temp,
+        None => return None,
+    };
 
-    LocInfo {
+    Some(LocInfo {
         id: temp.id,
         ident: temp.ident.clone(),
         line_num: temp.line_num,
         col_num: temp.col_num,
         file_path: temp.file_path.clone(),
-    }
+    })
 }
-
 
 pub fn select_dep(loc: &LocInfo) -> Vec<Dependency> {
     let conn = &mut get_connection();

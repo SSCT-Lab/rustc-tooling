@@ -31,7 +31,11 @@ pub fn find_dependencies(lhs: FaultLoc) -> Vec<FaultLoc> {
     let lhs_loc = select_loc_info(lhs.file_path.display().to_string(), lhs.line_num as i32, lhs.col_num as i32);
     let mut dependencies = Vec::new();
 
-    let deps = select_dep(&lhs_loc);
+    if lhs_loc.is_none() {
+        return dependencies;
+    }
+
+    let deps = select_dep(&lhs_loc.unwrap());
     for dep in deps {
         let rhs_loc = select_loc_info_by_id(dep.rhs_id);
         let rhs_dep = FaultLoc::new(rhs_loc, true, lhs.depth);

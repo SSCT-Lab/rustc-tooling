@@ -1,7 +1,7 @@
 use super::schema::{loc_info, dependencies};
 use diesel::prelude::*;
 
-#[derive(Queryable, Insertable, Debug)]
+#[derive(Queryable, Insertable, Debug, Clone)]
 #[diesel(table_name = loc_info)]
 pub struct LocInfo {
     pub id: i32,  
