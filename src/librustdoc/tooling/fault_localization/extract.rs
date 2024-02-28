@@ -3,6 +3,7 @@ use std::{fs::File, io::{BufRead, BufReader}, path::PathBuf};
 use regex::Regex;
 
 use crate::tooling::{database::model::LocInfo, utils::{select_dep, select_loc_info, select_loc_info_by_id}};
+use super::rank::RankList;
 
 #[derive(Clone, Debug)]
 pub struct FaultLoc {
@@ -101,5 +102,6 @@ pub fn extract_backtrace(path: PathBuf) -> Vec<FaultLoc> {
         }
     }
 
-    fault_locs
+    let mut rk_list = RankList::new(fault_locs);
+    rk_list.rank()
 }
