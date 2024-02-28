@@ -13,6 +13,7 @@ pub struct FaultLoc {
     pub file_path: PathBuf,
     pub is_dep: bool,
     pub depth: i32,
+    pub score: f64,
 }
 
 impl FaultLoc {
@@ -24,6 +25,7 @@ impl FaultLoc {
             file_path: PathBuf::from(&loc_info.file_path),
             is_dep,
             depth,
+            score: 0.0,
         }
     }
 }
@@ -90,6 +92,7 @@ pub fn extract_backtrace(path: PathBuf) -> Vec<FaultLoc> {
                         file_path,
                         is_dep,
                         depth,
+                        score: 0.0,
                     };
                     fault_locs.push(lhs.clone());
 
