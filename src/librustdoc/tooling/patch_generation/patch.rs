@@ -214,6 +214,16 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                                 i.method = syn::Ident::new("filter_map", i.method.span());
                             }
                         },
+                        ChangeType::ToExtendFromSlice => {
+                            if i.method.to_string() == "copy_from_slice" {
+                                i.method = syn::Ident::new("extend_from_slice", i.method.span());
+                            }
+                        },
+                        ChangeType::ToSaturating => {
+                            if i.method.to_string() == "abs" {
+                                i.method = syn::Ident::new("saturating_abs", i.method.span());
+                            }
+                        },
                         ChangeType::ToUnwrap => {
                             if i.method.to_string() == "except" {
                                 i.method = syn::Ident::new("unwrap", i.method.span());
@@ -228,11 +238,6 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                             if i.method.to_string() == "except" {
                                 i.method = syn::Ident::new("unwrap_or_fault", i.method.span());
                                 i.args.clear();
-                            }
-                        },
-                        ChangeType::ToExtendFromSlice => {
-                            if i.method.to_string() == "copy_from_slice" {
-                                i.method = syn::Ident::new("extend_from_slice", i.method.span());
                             }
                         },
                         _ => {}
