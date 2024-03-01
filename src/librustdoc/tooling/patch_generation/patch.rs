@@ -205,6 +205,8 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
 
                                                 break;
                                             }
+
+                                            tmp_expr_mc = inner_expr.clone();
                                         }
                                     }
                                 }
