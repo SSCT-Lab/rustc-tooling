@@ -71,7 +71,9 @@ pub fn extract_backtrace(path: PathBuf) -> Vec<FaultLoc> {
                 if let Some(caps) = re_line2.captures(&line2) {
                     let mut file_path = PathBuf::from(&caps[1]);
 
-                    if file_path.display().to_string().contains("/rustc") {
+                    if file_path.display().to_string().contains("/rustc") 
+                        || file_path.display().to_string().contains("/.cargo") 
+                        || file_path.display().to_string().contains("main.rs") {
                         continue;
                     }
 
