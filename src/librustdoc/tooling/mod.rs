@@ -9,7 +9,7 @@ use rustc_data_structures::fx::FxHashMap;
 use rustc_middle::ty::TyCtxt;
 use fault_localization::graph::{DependencyGraph, GraphVisitor};
 
-use crate::tooling::patch_generation::transform::Transform;
+use crate::tooling::patch_generation::patch::Transform;
 use crate::tooling::fault_localization::extract::extract_backtrace;
 
 
