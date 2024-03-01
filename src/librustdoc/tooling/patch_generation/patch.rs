@@ -119,8 +119,8 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                     match change_type {
                         ChangeType::ToFilterMap => {
                             if i.method.to_string() == "map" {
-                                if let syn::Expr::Closure(ref mut closure) = *i.args.first_mut().unwrap() {
-                                    if let syn::Expr::MethodCall(ref mut expr_mc) = closure.body.as_mut() {
+                                if let syn::Expr::Closure(ref mut expr_closure) = *i.args.first_mut().unwrap() {
+                                    if let syn::Expr::MethodCall(ref mut expr_mc) = expr_closure.body.as_mut() {
                                         let mut idents: Vec<syn::Ident> = self.get_mc_idents(&expr_mc);
                                         idents.reverse();
 
@@ -193,30 +193,15 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                                             output: syn::ReturnType::Default,
                                             body: Box::new(closure_body),
                                         });
-                                        
-                                        // let mut current_expr = expr_mc.receiver.as_mut();
-                                        // println!("{}", expr_mc.method.to_string());
-                                        // while let syn::Expr::MethodCall(ref mut inner_expr) = current_expr {
-                                        //     println!("{}", inner_expr.method.to_string());
-
-                                        //     if inner_expr.method.to_string() == "unwrap" {
-                                        //         inner_expr.method = syn::Ident::new("map", inner_expr.method.span());
-                                        //         inner_expr.args.clear();
-                                                
-                                        //         inner_expr.args.push(closure);
-
-                                        //         break;
-                                        //     }
-                                        //     current_expr = inner_expr.receiver.as_mut();
-                                        // }
 
                                         let mut tmp_expr_mc = expr_mc.clone();
                                         while let syn::Expr::MethodCall(ref mut inner_expr) = tmp_expr_mc.receiver.as_mut() {
                                             if inner_expr.method.to_string() == "unwrap" {
                                                 inner_expr.method = syn::Ident::new("map", inner_expr.method.span());
                                                 inner_expr.args.clear();
-                                              
                                                 inner_expr.args.push(closure);
+
+                                                expr_closure.body = Box::new(syn::Expr::MethodCall(inner_expr.clone()));
 
                                                 break;
                                             }
