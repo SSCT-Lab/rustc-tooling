@@ -54,6 +54,21 @@ impl<'a, 'tcx> GraphVisitor<'a, 'tcx> {
     fn update_current_body_id(&mut self, body_id: Option<rustc_hir::BodyId>) {
         self.current_body_id = body_id;
     }
+
+    fn is_impl(&mut self, def_id: LocalDefId) -> bool {
+        let parent = self.graph.tcx.local_parent(def_id);
+        let node = self.graph.tcx.hir_node_by_def_id(parent);
+        println!("node: {:?}", node);
+
+        match node {
+            rustc_hir::Node::ImplItem(_) => {
+                return true;
+            },
+            _ => {}
+        }
+        
+        false
+    }
 }
 
 impl GraphVisitor<'_, '_> {
@@ -295,7 +310,15 @@ impl<'a, 'tcx> Visitor<'tcx> for GraphVisitor<'a, 'tcx> {
 
     fn visit_fn(&mut self, fk: FnKind<'tcx>, fd: &'tcx FnDecl<'tcx>, b: BodyId, _: Span, id: LocalDefId) {
         // println!("visit real fn");
-        self.update_current_body_id(Some(b));
+        if let rustc_hir::intravisit::FnKind::ItemFn(_, _, _) = fk {
+            if self.is_impl(id) {
+                return;
+            }
+            self.update_current_body_id(Some(b));
+        } else if let rustc_hir::intravisit::FnKind::Method(_, _) = fk {
+            self.update_current_body_id(Some(b));
+        }
+
 
         rustc_hir::intravisit::walk_fn(self, fk, fd, b, id)
     }
