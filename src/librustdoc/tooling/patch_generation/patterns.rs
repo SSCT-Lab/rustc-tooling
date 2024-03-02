@@ -1,8 +1,14 @@
+#[allow(dead_code)]
 pub enum PATTERN {
     McAdd(AddType),
     McChange(ChangeType),
+    IfPreAdd,
+    IfPostAdd,
+    IfCondChange,
+    IndexMutate,
 }
 
+#[allow(dead_code)]
 pub enum ChangeType {
     // add -> saturating_add
     ToSaturating,
@@ -22,6 +28,7 @@ pub enum ChangeType {
     ToExtendFromSlice,
 }
 
+#[allow(dead_code)]
 pub enum AddType {
     // add as_bytes
     AddAsBytes,

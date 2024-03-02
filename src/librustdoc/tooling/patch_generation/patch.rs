@@ -28,6 +28,10 @@ impl Transform {
                 .expect("Failed to parse file to syntax tree");
 
             let patterns: Vec<PATTERN> = vec![
+                PATTERN::IndexMutate,
+                PATTERN::IfPreAdd,
+                PATTERN::IfPostAdd,
+                PATTERN::IfCondChange,
                 PATTERN::McAdd(AddType::AddAsBytes),
                 PATTERN::McAdd(AddType::AddMax),
                 PATTERN::McChange(ChangeType::ToSaturating),
@@ -93,7 +97,68 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
         syn::visit_mut::visit_file_mut(self, f);
     }
 
-    #[allow(unused_assignments)]
+    fn visit_expr_index_mut(&mut self, i: &mut syn::ExprIndex) {
+        println!("visit_expr_index_mut!");
+        let span = &i.span();
+        let start = span.start().line;
+        let end = span.end().line;
+
+        if self.get_loc_num().0 <= end as i32 && self.get_loc_num().0 >= start as i32 {
+            match &self.fix_pattern {
+                PATTERN::IndexMutate => {
+                    let span = i.index.span();
+
+                    if let syn::Expr::Binary(expr_binary) = i.index.as_mut() {
+                        let new_expr = syn::Expr::Binary(syn::ExprBinary {
+                            attrs: Vec::new(),
+                            left: Box::new(syn::Expr::Binary(expr_binary.clone())),
+                            op: syn::BinOp::Sub(syn::token::Minus::default()),
+                            right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                attrs: Vec::new(),
+                                lit: syn::Lit::Int(syn::LitInt::new("1", span))
+                            })),
+                        });
+
+                        i.index = Box::new(new_expr); 
+                    }
+
+                    if let syn::Expr::Range(expr_range) = i.index.as_mut() {
+                        let new_start_expr = match expr_range.start.take() {
+                            Some(start_expr) => {
+                                syn::Expr::Binary(syn::ExprBinary {
+                                    attrs: Vec::new(),
+                                    left: start_expr,
+                                    op: syn::BinOp::Sub(syn::token::Minus::default()),
+                                    right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                        attrs: Vec::new(),
+                                        lit: syn::Lit::Int(syn::LitInt::new("1", span)),
+                                    })),
+                                })
+                            }
+                            None => {
+                                syn::Expr::Binary(syn::ExprBinary {
+                                    attrs: Vec::new(),
+                                    left: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                        attrs: Vec::new(),
+                                        lit: syn::Lit::Int(syn::LitInt::new("0", span)),
+                                    })),
+                                    op: syn::BinOp::Sub(syn::token::Minus::default()),
+                                    right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                        attrs: Vec::new(),
+                                        lit: syn::Lit::Int(syn::LitInt::new("0", span)),
+                                    })),
+                                })
+                            }
+                        };
+                    
+                        expr_range.start = Some(Box::new(new_start_expr));
+                    }
+                },
+                _ => {}
+            }
+        }
+    }
+
     fn visit_expr_method_call_mut(&mut self, i: &mut syn::ExprMethodCall) {
         let span = &i.span();
         let start = span.start().line;
@@ -270,6 +335,7 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                         _ => {}
                     }
                 },
+                _ => {}
             }
         }
 
