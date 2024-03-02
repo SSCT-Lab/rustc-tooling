@@ -230,8 +230,40 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                             }
                         },
                         ChangeType::ToUnwrapOrElse => {
-                            if i.method.to_string() == "except" {
+                            if i.method.to_string() == "expect" {
                                 i.method = syn::Ident::new("unwrap_or_else", i.method.span());
+
+                                let closure_body = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                    attrs: Vec::new(),
+                                    receiver: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                        attrs: Vec::new(),
+                                        lit: syn::Lit::Int(syn::LitInt::new("1", i.method.span())),
+                                    })),
+                                    dot_token: syn::token::Dot::default(),
+                                    method: syn::Ident::new("into", i.method.span()),
+                                    turbofish: None,
+                                    paren_token: Default::default(),
+                                    args: Punctuated::new(),
+                                });
+
+                                let closure = syn::Expr::Closure(syn::ExprClosure {
+                                    attrs: Vec::new(),
+                                    lifetimes: None,
+                                    constness: None,
+                                    movability: None,
+                                    asyncness: None,
+                                    capture: None,
+                                    or1_token: Default::default(),
+                                    inputs: syn::punctuated::Punctuated::new(),
+                                    or2_token: Default::default(),
+                                    output: syn::ReturnType::Default,
+                                    body: Box::new(closure_body),
+                                });
+
+                                i.args.clear();
+                                i.args.push(closure);
+
+                                println!("{:?}", i.args);
                             }
                         },
                         ChangeType::ToUnwrapOrFault => {
