@@ -369,6 +369,24 @@ impl<'a, 'tcx> Visitor<'tcx> for GraphVisitor<'a, 'tcx> {
                     .or_insert(rhs_loc_infos);
                 }
             }
+        }else if let ExprKind::Index(lhs,rhs,_)=&ex.kind{
+            if let Some(lhs_loc_info) = self.extract_loc_info(lhs) {
+                // Initialize a vector to hold LocInfo objects for all expressions contributing to the rhs value
+                let mut rhs_loc_infos = Vec::new();
+
+                // Recursively visit rhs to extract location information for all contributing expressions
+                if let Some(rhs_info) = self.extract_loc_infos(rhs) {
+                    rhs_loc_infos.extend(rhs_info);
+                }
+
+                // Update the lhs_to_loc_info map in the DependencyGraph
+                // If there's already an entry for this lhs, append to it; otherwise, create a new entry
+                if !rhs_loc_infos.is_empty() {
+                    self.graph.lhs_to_loc_info.entry(lhs_loc_info)
+                    .and_modify(|e| e.extend(rhs_loc_infos.clone()))
+                    .or_insert(rhs_loc_infos);
+                }
+            }
         }
 
         rustc_hir::intravisit::walk_expr(self, ex);
