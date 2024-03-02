@@ -224,11 +224,6 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                                 i.method = syn::Ident::new("saturating_abs", i.method.span());
                             }
                         },
-                        ChangeType::ToUnwrap => {
-                            if i.method.to_string() == "except" {
-                                i.method = syn::Ident::new("unwrap", i.method.span());
-                            }
-                        },
                         ChangeType::ToUnwrapOrElse => {
                             if i.method.to_string() == "expect" {
                                 i.method = syn::Ident::new("unwrap_or_else", i.method.span());
@@ -267,8 +262,8 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                             }
                         },
                         ChangeType::ToUnwrapOrFault => {
-                            if i.method.to_string() == "except" {
-                                i.method = syn::Ident::new("unwrap_or_fault", i.method.span());
+                            if i.method.to_string() == "expect" {
+                                i.method = syn::Ident::new("unwrap_or_default", i.method.span());
                                 i.args.clear();
                             }
                         },
