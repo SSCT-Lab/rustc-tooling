@@ -28,20 +28,20 @@ impl Transform {
                 .expect("Failed to parse file to syntax tree");
 
             let patterns: Vec<PATTERN> = vec![
-                PATTERN::IndexMutate,
-                PATTERN::IfPreAdd,
-                PATTERN::IfPostAdd,
-                PATTERN::IfCondChange,
-                PATTERN::McAdd(AddType::AddAsBytes),
-                PATTERN::McAdd(AddType::AddMax),
-                PATTERN::McChange(ChangeType::ToSaturating),
+                // PATTERN::IndexMutate,
+                // PATTERN::IfPreAdd,
+                // PATTERN::IfPostAdd,
+                // PATTERN::IfCondChange,
+                // PATTERN::McAdd(AddType::AddAsBytes),
+                // PATTERN::McAdd(AddType::AddMax),
+                // PATTERN::McChange(ChangeType::ToSaturating),
                 PATTERN::McChange(ChangeType::ToCheck),
-                PATTERN::McChange(ChangeType::ToWrapping),
-                PATTERN::McChange(ChangeType::ToFilterMap),
-                PATTERN::McChange(ChangeType::ToUnwrap),
-                PATTERN::McChange(ChangeType::ToUnwrapOrElse),
-                PATTERN::McChange(ChangeType::ToUnwrapOrFault),
-                PATTERN::McChange(ChangeType::ToExtendFromSlice),
+                // PATTERN::McChange(ChangeType::ToWrapping),
+                // PATTERN::McChange(ChangeType::ToFilterMap),
+                // PATTERN::McChange(ChangeType::ToUnwrap),
+                // PATTERN::McChange(ChangeType::ToUnwrapOrElse),
+                // PATTERN::McChange(ChangeType::ToUnwrapOrFault),
+                // PATTERN::McChange(ChangeType::ToExtendFromSlice),
             ];
 
             for pattern in patterns {
@@ -616,6 +616,383 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                             }
                         },
                         _ => {},
+                    }
+                },
+                PATTERN::McChange(ChangeType::ToCheck) => {
+                    match i.op {
+                        syn::BinOp::Add(_) => {
+                            let check_add = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_add", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_add),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::AddAssign(_) => {
+                            let check_add = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_add", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_add),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::Sub(_) => {
+                            let check_sub = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_sub", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_sub),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::SubAssign(_) => {
+                            let check_sub = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_sub", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_sub),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::Mul(_) => {
+                            let check_mul = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_mul", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_mul),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::MulAssign(_) => {
+                            let check_mul = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_mul", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_mul),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::Div(_) => {
+                            let check_div = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_div", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_div),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::DivAssign(_) => {
+                            let check_div = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_div", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_div),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::Shl(_) => {
+                            let check_shl = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_shl", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_shl),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::ShlAssign(_) => {
+                            let check_shl = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_shl", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_shl),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::Shr(_) => {
+                            let check_shr = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_shr", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_shr),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::ShrAssign(_) => {
+                            let check_shr = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("checked_shr", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            let unwrap_or_default = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: Box::new(check_shr),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("unwrap_or_default", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::new(),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(unwrap_or_default),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        _ => {}
                     }
                 },
                 _ => {}
