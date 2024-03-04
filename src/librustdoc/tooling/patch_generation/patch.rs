@@ -274,6 +274,90 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                                 right: Box::new(saturating_div),
                             }
                         },
+                        syn::BinOp::Shl(_) => {
+                            let saturating_shl = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("saturating_shl", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(saturating_shl),
+                            }
+                        },
+                        syn::BinOp::ShlAssign(_) => {
+                            let saturating_shl = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("saturating_shl", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(saturating_shl),
+                            }
+                        },
+                        syn::BinOp::Shr(_) => {
+                            let saturating_shr = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("saturating_shr", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(saturating_shr),
+                            }
+                        },
+                        syn::BinOp::ShrAssign(_) => {
+                            let saturating_shr = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("saturating_shr", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(saturating_shr),
+                            }
+                        },
                         _ => {}
                     }
                 },
