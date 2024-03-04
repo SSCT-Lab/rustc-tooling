@@ -97,8 +97,109 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
         syn::visit_mut::visit_file_mut(self, f);
     }
 
+    fn visit_expr_binary_mut(&mut self, i: &mut syn::ExprBinary) {
+        let span = &i.span();
+        let start = span.start().line;
+        let end = span.end().line;
+
+        if self.get_loc_num().0 <= end as i32 && self.get_loc_num().0 >= start as i32 {
+            match &self.fix_pattern {
+                PATTERN::McChange(ChangeType::ToSaturating) => {
+                    match i.op {
+                        syn::BinOp::Add(_) => {
+                            let saturating_add = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("saturating_add", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(saturating_add),
+                            }
+                        },
+                        syn::BinOp::AddAssign(_) => {
+                            let saturating_add = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("saturating_add", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(saturating_add),
+                            }
+                        },
+                        syn::BinOp::Sub(_) => {
+                            let saturating_add = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("saturating_sub", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(saturating_add),
+                            }
+                        },
+                        syn::BinOp::SubAssign(_) => {
+                            let saturating_add = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("saturating_sub", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(saturating_add),
+                            }
+                        },
+                        _ => {}
+                    }
+                },
+                _ => {}
+            }
+        }
+    }
+
     fn visit_expr_index_mut(&mut self, i: &mut syn::ExprIndex) {
-        println!("visit_expr_index_mut!");
+        // println!("visit_expr_index_mut!");
         let span = &i.span();
         let start = span.start().line;
         let end = span.end().line;
