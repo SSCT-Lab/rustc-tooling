@@ -5,6 +5,7 @@ pub enum PATTERN {
     IfPreAdd,
     IfPostAdd,
     IfCondChange,
+    MatchChange,
     IndexMutate,
 }
 

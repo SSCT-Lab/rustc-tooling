@@ -28,20 +28,21 @@ impl Transform {
                 .expect("Failed to parse file to syntax tree");
 
             let patterns: Vec<PATTERN> = vec![
-                // PATTERN::IndexMutate,
-                // PATTERN::IfPreAdd,
-                // PATTERN::IfPostAdd,
-                // PATTERN::IfCondChange,
-                // PATTERN::McAdd(AddType::AddAsBytes),
-                // PATTERN::McAdd(AddType::AddMax),
-                // PATTERN::McChange(ChangeType::ToSaturating),
+                PATTERN::IndexMutate,
+                PATTERN::IfPreAdd,
+                PATTERN::IfPostAdd,
+                PATTERN::IfCondChange,
+                PATTERN::MatchChange,
+                PATTERN::McAdd(AddType::AddAsBytes),
+                PATTERN::McAdd(AddType::AddMax),
+                PATTERN::McChange(ChangeType::ToSaturating),
                 PATTERN::McChange(ChangeType::ToCheck),
-                // PATTERN::McChange(ChangeType::ToWrapping),
-                // PATTERN::McChange(ChangeType::ToFilterMap),
-                // PATTERN::McChange(ChangeType::ToUnwrap),
-                // PATTERN::McChange(ChangeType::ToUnwrapOrElse),
-                // PATTERN::McChange(ChangeType::ToUnwrapOrFault),
-                // PATTERN::McChange(ChangeType::ToExtendFromSlice),
+                PATTERN::McChange(ChangeType::ToWrapping),
+                PATTERN::McChange(ChangeType::ToFilterMap),
+                PATTERN::McChange(ChangeType::ToUnwrap),
+                PATTERN::McChange(ChangeType::ToUnwrapOrElse),
+                PATTERN::McChange(ChangeType::ToUnwrapOrFault),
+                PATTERN::McChange(ChangeType::ToExtendFromSlice),
             ];
 
             for pattern in patterns {
@@ -95,6 +96,33 @@ impl<'ast> AstVisitor<'ast> {
 impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
     fn visit_file_mut(&mut self, f: &mut syn::File) {
         syn::visit_mut::visit_file_mut(self, f);
+    }
+
+    fn visit_expr_match_mut(&mut self, i: &mut syn::ExprMatch) {
+        let span = &i.span();
+        let start = span.start().line;
+        let end = span.end().line;
+
+        if self.get_loc_num().0 <= end as i32 && self.get_loc_num().0 >= start as i32 {
+            match &self.fix_pattern {
+                PATTERN::MatchChange => {
+                    if let syn::Expr::Binary(expr_binary) = i.expr.as_mut() {
+                        let new_expr = syn::Expr::Binary(syn::ExprBinary {
+                            attrs: Vec::new(),
+                            left: Box::new(syn::Expr::Binary(expr_binary.clone())),
+                            op: syn::BinOp::Sub(syn::token::Minus::default()),
+                            right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                attrs: Vec::new(),
+                                lit: syn::Lit::Int(syn::LitInt::new("1", i.span()))
+                            })),
+                        });
+
+                        i.expr = Box::new(new_expr);
+                    }
+                },
+                _ => {}
+            }
+        }
     }
 
     fn visit_expr_binary_mut(&mut self, i: &mut syn::ExprBinary) {
