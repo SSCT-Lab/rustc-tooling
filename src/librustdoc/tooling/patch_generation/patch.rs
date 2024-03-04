@@ -715,7 +715,7 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                                         let mut idents: Vec<syn::Ident> = self.get_mc_idents(&expr_mc);
                                         idents.reverse();
 
-                                        println!("{:?}", idents);
+                                        // println!("{:?}", idents);
 
                                         let unwrap_index = idents.iter().position(|ident| ident.to_string() == "unwrap");
                                         idents = match unwrap_index {
@@ -849,7 +849,7 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                                 i.args.clear();
                                 i.args.push(closure);
 
-                                println!("{:?}", i.args);
+                                // println!("{:?}", i.args);
                             }
                         },
                         ChangeType::ToUnwrapOrFault => {
