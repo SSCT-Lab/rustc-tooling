@@ -361,6 +361,263 @@ impl<'ast> syn::visit_mut::VisitMut for AstVisitor<'ast> {
                         _ => {}
                     }
                 },
+                PATTERN::McChange(ChangeType::ToWrapping) => {
+                    match i.op {
+                        syn::BinOp::Add(_) => {
+                            let wrapping_add = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_add", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_add),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::AddAssign(_) => {
+                            let wrapping_add = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_add", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_add),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::Sub(_) => {
+                            let wrapping_sub = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_sub", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_sub),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::SubAssign(_) => {
+                            let wrapping_sub = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_sub", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_sub),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::Mul(_) => {
+                            let wrapping_mul = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_mul", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_mul),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::MulAssign(_) => {
+                            let wrapping_mul = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_mul", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_mul),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::Div(_) => {
+                            let wrapping_div = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_div", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_div),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::DivAssign(_) => {
+                            let wrapping_div = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_div", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_div),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::Shl(_) => {
+                            let wrapping_shl = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_shl", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_shl),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::ShlAssign(_) => {
+                            let wrapping_shl = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_shl", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_shl),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::Shr(_) => {
+                            let wrapping_shr = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_shr", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_shr),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        syn::BinOp::ShrAssign(_) => {
+                            let wrapping_shr = syn::Expr::MethodCall(syn::ExprMethodCall {
+                                attrs: Vec::new(),
+                                receiver: i.left.clone(),
+                                dot_token: syn::token::Dot::default(),
+                                method: syn::Ident::new("wrapping_shr", i.op.span()),
+                                turbofish: None,
+                                paren_token: Default::default(),
+                                args: Punctuated::from_iter(vec![*i.right.clone()]),
+                            });
+
+                            *i = syn::ExprBinary {
+                                attrs: Vec::new(),
+                                left: Box::new(wrapping_shr),
+                                op: syn::BinOp::Add(Default::default()),
+                                right: Box::new(syn::Expr::Lit(syn::ExprLit {
+                                    attrs: Vec::new(),
+                                    lit: syn::Lit::Int(syn::LitInt::new("0", i.span()))
+                                })),
+                            }
+                        },
+                        _ => {},
+                    }
+                },
                 _ => {}
             }
         }
