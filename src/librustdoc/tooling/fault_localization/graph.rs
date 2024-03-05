@@ -392,7 +392,7 @@ impl<'a, 'tcx> Visitor<'tcx> for GraphVisitor<'a, 'tcx> {
                     .or_insert(rhs_loc_infos);
                 }
             }
-        }else if let ExprKind::Index(lhs,rhs,_)=&ex.kind{
+        }else if let ExprKind::Index(lhs,rhs,_) = &ex.kind{
             if let Some(lhs_loc_info) = self.extract_loc_info(lhs) {
                 // Initialize a vector to hold LocInfo objects for all expressions contributing to the rhs value
                 let mut rhs_loc_infos = Vec::new();
